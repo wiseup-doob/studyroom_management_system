@@ -1,0 +1,278 @@
+/* StudentSearch 컴포넌트 스타일 */
+
+.student-search {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  margin: 0;
+}
+
+.student-search__input-container {
+  margin-bottom: 1rem;
+}
+
+.student-search__input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background-color: #ffffff;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.student-search__input-wrapper:focus-within {
+  border-color: #3182ce;
+  box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+}
+
+.student-search__icon {
+  font-size: 1.25rem;
+  color: #a0aec0;
+  margin-right: 0.75rem;
+  flex-shrink: 0;
+}
+
+.student-search__input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+  color: #2d3748;
+  background: transparent;
+}
+
+.student-search__input::placeholder {
+  color: #a0aec0;
+}
+
+.student-search__input:disabled {
+  color: #a0aec0;
+  cursor: not-allowed;
+}
+
+.student-search__clear {
+  background: none;
+  border: none;
+  color: #a0aec0;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.student-search__clear:hover {
+  color: #4a5568;
+  background-color: #f7fafc;
+}
+
+.student-search__loading {
+  margin-left: 0.5rem;
+  flex-shrink: 0;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #e2e8f0;
+  border-top: 2px solid #3182ce;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 검색 결과 드롭다운 */
+.student-search__results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  max-height: 400px;
+  overflow-y: auto;
+  margin-top: 0.25rem;
+}
+
+.student-search__results-header {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e2e8f0;
+  background-color: #f8fafc;
+  border-radius: 12px 12px 0 0;
+}
+
+.student-search__results-count {
+  font-size: 0.875rem;
+  color: #4a5568;
+  font-weight: 500;
+}
+
+.student-search__results-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.student-search__result-item {
+  padding: 0;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid #f7fafc;
+}
+
+.student-search__result-item:last-child {
+  border-bottom: none;
+}
+
+.student-search__result-item:hover {
+  background-color: #f7fafc;
+}
+
+.student-search__result-item:focus {
+  outline: none;
+  background-color: #edf2f7;
+}
+
+.student-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  gap: 1rem;
+}
+
+.student-result__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.student-result__name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.student-result__details {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.student-result__id {
+  font-size: 0.875rem;
+  color: #4a5568;
+  background-color: #edf2f7;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.student-result__grade {
+  font-size: 0.875rem;
+  color: #718096;
+}
+
+.student-result__action {
+  flex-shrink: 0;
+}
+
+.student-result__arrow {
+  font-size: 1.25rem;
+  color: #a0aec0;
+  transition: all 0.2s ease;
+}
+
+.student-search__result-item:hover .student-result__arrow {
+  color: #3182ce;
+  transform: translateX(2px);
+}
+
+/* 검색 결과 없음 */
+.student-search__no-results {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: #718096;
+}
+
+.no-results__icon {
+  font-size: 2rem;
+  margin-bottom: 0.75rem;
+}
+
+.no-results__title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #4a5568;
+  margin-bottom: 0.25rem;
+}
+
+.no-results__subtitle {
+  font-size: 0.875rem;
+  color: #a0aec0;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .student-search {
+    max-width: 100%;
+  }
+  
+  .student-search__input-wrapper {
+    padding: 0.625rem 0.875rem;
+  }
+  
+  .student-search__icon {
+    font-size: 1.125rem;
+    margin-right: 0.5rem;
+  }
+  
+  .student-search__input {
+    font-size: 0.875rem;
+  }
+  
+  .student-result {
+    padding: 0.875rem;
+  }
+  
+  .student-result__name {
+    font-size: 0.875rem;
+  }
+  
+  .student-result__details {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  
+  .student-result__id {
+    font-size: 0.75rem;
+  }
+  
+  .student-result__grade {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .student-search__results {
+    max-height: 300px;
+  }
+  
+  .student-search__results-list {
+    max-height: 200px;
+  }
+}

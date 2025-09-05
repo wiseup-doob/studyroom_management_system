@@ -1,0 +1,225 @@
+/* SeatingChart 컴포넌트 스타일 */
+
+.seating-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  margin: 0;
+  padding: 1rem;
+}
+
+/* 좌석 통계 */
+.seating-chart__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  padding: 0.75rem;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  background-color: #ffffff;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.stat-label {
+  color: #4a5568;
+}
+
+.stat-value {
+  color: #2d3748;
+  font-weight: 600;
+}
+
+.stat-item--empty .stat-value {
+  color: #718096;
+}
+
+.stat-item--present .stat-value {
+  color: #38a169;
+}
+
+.stat-item--dismissed .stat-value {
+  color: #d69e2e;
+}
+
+.stat-item--unauthorized .stat-value {
+  color: #e53e3e;
+}
+
+.stat-item--authorized .stat-value {
+  color: #4a5568;
+}
+
+.stat-item--not-enrolled .stat-value {
+  color: #718096;
+}
+
+/* 좌석 그리드 */
+.seating-chart__grid {
+  display: grid;
+  gap: 8px;
+  padding: 1rem;
+  background-color: #ffffff;
+  border-radius: 12px;
+  border: 2px solid #e2e8f0;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  min-height: 400px;
+  align-items: center;
+  justify-items: center;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* 범례 */
+.seating-chart__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  padding: 0.75rem;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #4a5568;
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+.legend-color--empty {
+  background-color: var(--color-seat-empty-bg);
+}
+
+.legend-color--not-enrolled {
+  background-color: var(--color-seat-not-enrolled-bg);
+}
+
+.legend-color--dismissed {
+  background-color: var(--color-seat-dismissed-bg);
+}
+
+.legend-color--present {
+  background-color: var(--color-seat-present-bg);
+}
+
+.legend-color--unauthorized {
+  background-color: var(--color-seat-unauthorized-bg);
+}
+
+.legend-color--authorized {
+  background-color: var(--color-seat-authorized-bg);
+}
+
+/* 반응형 디자인 */
+@media (min-width: 1400px) {
+  .seating-chart__grid {
+    gap: 12px;
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 1399px) and (min-width: 1200px) {
+  .seating-chart__grid {
+    gap: 10px;
+    padding: 1.25rem;
+  }
+}
+
+@media (max-width: 1199px) and (min-width: 1024px) {
+  .seating-chart__grid {
+    gap: 8px;
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 1023px) and (min-width: 768px) {
+  .seating-chart__grid {
+    gap: 6px;
+    padding: 0.75rem;
+  }
+}
+
+@media (max-width: 767px) and (min-width: 480px) {
+  .seating-chart {
+    padding: 0.5rem;
+  }
+  
+  .seating-chart__stats {
+    gap: 0.5rem;
+    padding: 0.5rem;
+  }
+  
+  .stat-item {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+  }
+  
+  .seating-chart__grid {
+    gap: 4px;
+    padding: 0.5rem;
+    min-height: 300px;
+  }
+  
+  .legend-item {
+    font-size: 0.8rem;
+  }
+  
+  .legend-color {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+@media (max-width: 479px) {
+  .seating-chart {
+    padding: 0.25rem;
+  }
+  
+  .seating-chart__stats {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.5rem;
+  }
+  
+  .seating-chart__legend {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .seating-chart__grid {
+    gap: 3px;
+    padding: 0.25rem;
+    min-height: 250px;
+  }
+  
+  .stat-item {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+  }
+}

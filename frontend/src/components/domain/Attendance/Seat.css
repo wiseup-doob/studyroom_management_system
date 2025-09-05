@@ -1,0 +1,164 @@
+/* Seat 컴포넌트 스타일 */
+
+.seat {
+  aspect-ratio: 1;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 60px;
+  min-width: 60px;
+  position: relative;
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.seat:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.seat:focus {
+  outline: 2px solid #3182ce;
+  outline-offset: 2px;
+}
+
+/* 좌석 번호 */
+.seat__number {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #4a5568;
+  margin-bottom: 2px;
+}
+
+/* 학생 정보 */
+.seat__student {
+  text-align: center;
+  width: 100%;
+}
+
+.seat__student-name {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: #2d3748;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.seat__student-id {
+  font-size: 0.6rem;
+  color: #718096;
+  margin-top: 1px;
+}
+
+/* 좌석 상태별 스타일 */
+.seat--empty {
+  background-color: var(--color-seat-empty-bg);
+  border-color: #e2e8f0;
+}
+
+.seat--empty:hover {
+  background-color: #f5f5f5;
+}
+
+.seat--not-enrolled {
+  background-color: var(--color-seat-not-enrolled-bg);
+  border-color: #e2e8f0;
+}
+
+.seat--not-enrolled:hover {
+  background-color: #f5f5f5;
+}
+
+.seat--dismissed {
+  background-color: var(--color-seat-dismissed-bg);
+  border-color: #e2e8f0;
+}
+
+.seat--dismissed:hover {
+  background-color: #f0f2c4;
+}
+
+.seat--present {
+  background-color: var(--color-seat-present-bg);
+  border-color: #68d391;
+}
+
+.seat--present:hover {
+  background-color: #b8f0d1;
+}
+
+.seat--unauthorized {
+  background-color: var(--color-seat-unauthorized-bg);
+  border-color: #fc8181;
+}
+
+.seat--unauthorized:hover {
+  background-color: #fecaca;
+}
+
+.seat--authorized {
+  background-color: var(--color-seat-authorized-bg);
+  border-color: #cbd5e0;
+}
+
+.seat--authorized:hover {
+  background-color: #d1d9e0;
+}
+
+/* 선택된 좌석 */
+.seat--selected {
+  background-color: var(--color-seat-selected-bg) !important;
+  border-color: #2d3748 !important;
+  box-shadow: 0 0 0 3px rgba(45, 55, 72, 0.2) !important;
+  transform: scale(1.05);
+}
+
+.seat--selected:hover {
+  transform: scale(1.05) translateY(-2px);
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .seat {
+    min-height: 50px;
+    min-width: 50px;
+  }
+  
+  .seat__number {
+    font-size: 0.7rem;
+  }
+  
+  .seat__student-name {
+    font-size: 0.65rem;
+  }
+  
+  .seat__student-id {
+    font-size: 0.55rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .seat {
+    min-height: 40px;
+    min-width: 40px;
+  }
+  
+  .seat__number {
+    font-size: 0.65rem;
+  }
+  
+  .seat__student-name {
+    font-size: 0.6rem;
+  }
+  
+  .seat__student-id {
+    font-size: 0.5rem;
+  }
+}

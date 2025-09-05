@@ -1,0 +1,230 @@
+/* ClassroomSelector 컴포넌트 스타일 */
+
+.classroom-selector {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background-color: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.classroom-selector__main {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.classroom-selector__label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2d3748;
+  white-space: nowrap;
+}
+
+.classroom-selector__input-group {
+  position: relative;
+  flex: 1;
+  min-width: 150px;
+  max-width: 300px;
+}
+
+.classroom-selector__select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 1rem;
+  background-color: #ffffff;
+  color: #2d3748;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.classroom-selector__select:hover {
+  border-color: #cbd5e0;
+}
+
+.classroom-selector__select:focus {
+  outline: none;
+  border-color: #3182ce;
+  box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+}
+
+.classroom-selector__select:disabled {
+  background-color: #f7fafc;
+  color: #a0aec0;
+  cursor: not-allowed;
+}
+
+.classroom-selector__loading {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #e2e8f0;
+  border-top: 2px solid #3182ce;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.classroom-selector__actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+}
+
+.classroom-selector__button {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.classroom-selector__button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.classroom-selector__button--primary {
+  background-color: #3182ce;
+  color: #ffffff;
+}
+
+.classroom-selector__button--primary:hover:not(:disabled) {
+  background-color: #2c5aa0;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(49, 130, 206, 0.3);
+}
+
+.classroom-selector__button--secondary {
+  background-color: #ffffff;
+  color: #4a5568;
+  border: 2px solid #e2e8f0;
+}
+
+.classroom-selector__button--secondary:hover:not(:disabled) {
+  background-color: #f7fafc;
+  border-color: #cbd5e0;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.classroom-selector__info {
+  padding: 0.75rem 1rem;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.classroom-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.classroom-info__name {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #2d3748;
+}
+
+.classroom-info__size {
+  font-size: 0.875rem;
+  color: #718096;
+  background-color: #ffffff;
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 1024px) {
+  .classroom-selector__input-group {
+    max-width: 250px;
+  }
+}
+
+@media (max-width: 768px) {
+  .classroom-selector {
+    padding: 0.75rem 1rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+  
+  .classroom-selector__main {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+  
+  .classroom-selector__label {
+    text-align: center;
+  }
+  
+  .classroom-selector__input-group {
+    min-width: auto;
+    max-width: none;
+  }
+  
+  .classroom-selector__actions {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  .classroom-selector__button {
+    flex: 1;
+    justify-content: center;
+    min-width: 120px;
+  }
+  
+  .classroom-selector__info {
+    margin-left: 0;
+    text-align: center;
+  }
+  
+  .classroom-info {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .classroom-selector__actions {
+    flex-direction: column;
+  }
+  
+  .classroom-selector__button {
+    min-width: auto;
+  }
+}
