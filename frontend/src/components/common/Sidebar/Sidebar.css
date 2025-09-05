@@ -1,0 +1,261 @@
+/* Sidebar 컴포넌트 스타일 */
+
+.sidebar {
+  width: var(--sidebar-length, 256px);
+  height: 100vh;
+  background-color: var(--color-sidebar-bg);
+  padding: 8px;
+  position: fixed;
+  left: 0;
+  top: 0;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+/* 로고 섹션 */
+.sidebar-logo {
+  margin-bottom: 30px;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.wiseup-logo {
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* 섹션 스타일 */
+.sidebar-section {
+  margin-bottom: 25px;
+}
+
+.section-title {
+  margin: 0 0 10px 0;
+  padding: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: var(--label-medium-font-size);
+  font-weight: var(--label-medium-font-weight);
+  line-height: var(--label-medium-line-height);
+  color: var(--color-font-primary);
+  background: none;
+  border: none;
+  outline: none;
+  list-style: none;
+  text-decoration: none;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 계정 버튼 */
+.account-button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  gap: 12px;
+}
+
+.account-button:hover {
+  background-color: var(--color-sidebar-button-hover);
+}
+
+.account-avatar {
+  width: 40px;
+  height: 40px;
+  background: #667eea;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 16px;
+  color: white;
+  flex-shrink: 0;
+}
+
+.account-info {
+  flex: 1;
+  text-align: left;
+}
+
+.account-name {
+  font-size: var(--body-medium-font-size);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-font-primary);
+  line-height: 1.2;
+}
+
+.account-email {
+  font-size: 12px;
+  color: #6B7280;
+  margin-top: 2px;
+}
+
+/* 네비게이션 영역 */
+.sidebar-nav {
+  margin: 0;
+  padding: 0;
+}
+
+/* 메뉴 리스트 */
+.sidebar-menu {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 메뉴 아이템 */
+.sidebar-menu-item {
+  margin: 0;
+  padding: 0;
+}
+
+/* 사이드바 버튼 */
+.sidebar-button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 4px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  color: #191E22;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  gap: 12px;
+}
+
+.sidebar-button:hover {
+  background-color: var(--color-sidebar-button-hover);
+}
+
+.sidebar-button--active,
+.sidebar-button[data-active="true"] {
+  background-color: var(--color-sidebar-button-active);
+  color: #0066CC;
+  font-weight: var(--font-weight-semibold);
+  box-shadow: var(--shadow-sm);
+}
+
+.sidebar-button--active:hover,
+.sidebar-button[data-active="true"]:hover {
+  background-color: var(--color-sidebar-button-active);
+}
+
+/* 사이드바 버튼 하위 요소 */
+.sidebar-button__icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.sidebar-button__label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: inherit;
+}
+
+/* 사이드바 푸터 */
+.sidebar-footer {
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid #E3E8EF;
+}
+
+.logout-button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid #E3E8EF;
+  color: #6B7280;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  gap: 12px;
+}
+
+.logout-button:hover {
+  background-color: #F3F4F6;
+  border-color: #D1D5DB;
+  color: #374151;
+}
+
+.logout-button__icon {
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+}
+
+.logout-button__label {
+  flex: 1;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .sidebar {
+    width: var(--sidebar-length-mobile, 200px);
+    padding: 16px;
+  }
+  
+  .sidebar-logo {
+    margin-bottom: 20px;
+  }
+  
+  .sidebar-section {
+    margin-bottom: 16px;
+  }
+  
+  .section-title {
+    font-size: 11px;
+    line-height: 14px;
+  }
+}
+
+/* 애니메이션 효과 */
+.sidebar {
+  animation: slideInLeft 0.3s ease-out;
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}

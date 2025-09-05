@@ -1,82 +1,16 @@
-.home {
+/* Home 페이지 스타일 */
+.home-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   min-height: 100vh;
-  padding: 0;
-}
-
-.hero-section {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  text-align: center;
-  padding: 4rem 2rem;
 }
 
-.hero-section h1 {
+.home-container h1 {
   font-size: 3rem;
-  margin-bottom: 1rem;
   font-weight: 700;
-}
-
-.hero-section p {
-  font-size: 1.2rem;
-  margin-bottom: 2rem;
-  opacity: 0.9;
-}
-
-.cta-button {
-  background: white;
-  color: #667eea;
-  border: none;
-  padding: 1rem 2rem;
-  font-size: 1.1rem;
-  font-weight: 600;
-  border-radius: 50px;
-  cursor: pointer;
-  transition: transform 0.3s ease;
-}
-
-.cta-button:hover {
-  transform: translateY(-2px);
-}
-
-.features-section {
-  padding: 4rem 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.features-section h2 {
-  text-align: center;
-  font-size: 2.5rem;
-  margin-bottom: 3rem;
-  color: #333;
-}
-
-.features-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
-}
-
-.feature-card {
-  background: white;
-  padding: 2rem;
-  border-radius: 10px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  text-align: center;
-  transition: transform 0.3s ease;
-}
-
-.feature-card:hover {
-  transform: translateY(-5px);
-}
-
-.feature-card h3 {
-  font-size: 1.5rem;
-  margin-bottom: 1rem;
-  color: #667eea;
-}
-
-.feature-card p {
-  color: #666;
-  line-height: 1.6;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  margin: 0;
 }

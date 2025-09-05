@@ -1,0 +1,37 @@
+/* Layout 컴포넌트 스타일 */
+
+:root {
+  --sidebar-length: 256px;
+  --main-content-length: calc(100vw - var(--sidebar-length));
+}
+
+.layout-container {
+  display: flex;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* 반응형 레이아웃 */
+@media (max-width: 768px) {
+  :root {
+    --sidebar-length: 200px;
+  }
+  
+  .layout-container {
+    flex-direction: column;
+  }
+}
+
+/* 애니메이션 효과 */
+.layout-container {
+  animation: layoutFadeIn 0.3s ease-out;
+}
+
+@keyframes layoutFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

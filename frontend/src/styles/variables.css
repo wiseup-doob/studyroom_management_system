@@ -1,0 +1,210 @@
+/* ===== 공통 CSS 변수 정의 ===== */
+:root {
+  /* ===== 폰트 관련 ===== */
+  --font-family-primary: 'Noto Sans KR', sans-serif;
+  --font-family-secondary: 'Pretendard', sans-serif;
+  --font-family-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /*타이포그래피 관련*/
+  --display-large-font-size: 58px;
+  --display-medium-font-size: 44px;
+  --display-small-font-size: 36px;
+
+  --headline-large-font-size: 32px;
+  --headline-medium-font-size: 28px;
+  --headline-small-font-size: 24px;
+
+  --title-large-font-size: 22px;
+  --title-medium-font-size: 18px;
+  --title-small-font-size: 14px;
+
+  --label-large-font-size: 16px;
+  --label-medium-font-size: 12px;
+  --label-small-font-size: 11px;
+
+  --body-large-font-size: 16px;
+  --body-medium-font-size: 14px;
+  --body-small-font-size: 12px;
+
+  --button-large-font-size: 18px;
+  --button-medium-font-size: 16px;
+  --button-small-font-size: 14px;
+  /* 폰트 크기 */
+  --font-size-xs: 10px;
+  --font-size-sm: 12px;
+  --font-size-base: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-3xl: 30px;
+  
+  /* 폰트 굵기 */
+  --display-large-font-weight: 700;
+  --display-medium-font-weight: 700;
+  --display-small-font-weight: 700;
+
+  --headline-large-font-weight: bold;
+  --headline-medium-font-weight: bold;
+  --headline-small-font-weight: bold;
+
+  --title-large-font-weight: bold;
+  --title-medium-font-weight: bold;
+  --title-small-font-weight: bold;
+
+  --label-large-font-weight: medium;
+  --label-medium-font-weight: medium;
+  --label-small-font-weight: medium;
+
+  --body-large-font-weight: 400;
+  --body-medium-font-weight: 400;
+  --body-small-font-weight: 400;
+
+  --button-large-font-weight: 700;
+  --button-medium-font-weight: 700;
+  --button-small-font-weight: 700;
+
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  
+  /* ===== 색상 관련 ===== */
+  /* 글자 색상 */
+  --color-font-primary: #191E22;
+
+  --color-present-font: #191E22;
+  --color-dismissed-font: #FFFFFF;
+  --color-unauthorized-font: #191E22;
+  --color-authorized-font: #77838C;
+  --color-not-enrolled-font: #77838C;
+
+  --color-search-font: #A3ACB2;
+
+  --color-sidebar-bg: #F4F7FA;
+  --color-account-bg: #E7ECEE;
+
+  /* 버튼 색상 */
+  --color-sidebar-button-bg: #F4F7FA;
+  --color-sidebar-button-hover: #E7ECEE;
+  --color-sidebar-button-active: #E7ECEE;
+
+  --color-present-button-bg: #CCF7E4;
+  --color-dismissed-button-bg: #CCD6DB;
+  --color-unauthorized-button-bg: #FFE3E1;
+  --color-authorized-button-bg: #F8FAFC;
+  --color-not-enrolled-button-bg: #FFFFFF;
+
+  /*테두리 색상*/
+  --color-border-attendance: #191E22;
+
+  /*검색창 색상*/
+  --color-search-bg: #F4F7FA;
+
+  /*Line Height 관련*/
+  --display-large-line-height: 64px;
+  --display-medium-line-height: 52px;
+  --display-small-line-height: 44px;
+
+  --headline-large-line-height: 40px;
+  --headline-medium-line-height: 36px;
+  --headline-small-line-height: 32px;
+
+  --title-large-line-height: 28px;
+  --title-medium-line-height: 24px;
+  --title-small-line-height: 20px;
+
+  --label-large-line-height: 24px;
+  --label-medium-line-height: 16px;
+  --label-small-line-height: 16px;
+
+  --body-large-line-height: 24px;
+  --body-medium-line-height: 20px;
+  --body-small-line-height: 16px;
+
+  --button-large-line-height: 24px;
+  --button-medium-line-height: 24px;
+  --button-small-line-height: 20px;
+
+  
+  /* ===== 간격 관련 ===== */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  
+  /* ===== 테두리 반경 ===== */
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+  --border-radius-xl: 16px;
+  --border-radius-full: 9999px;
+  
+  /* ===== 그림자 ===== */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  
+  /* ===== 전환 효과 ===== */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.2s ease;
+  --transition-slow: 0.3s ease;
+  
+  /* ===== 시간표 관련 ===== */
+  /* 시간표 색상 */
+  --timetable-primary-color: #007bff;
+  --timetable-secondary-color: #6c757d;
+  --timetable-success-color: #28a745;
+  --timetable-warning-color: #ffc107;
+  --timetable-danger-color: #dc3545;
+  --timetable-info-color: #17a2b8;
+  
+  /* 시간표 배경 색상 */
+  --timetable-bg-primary: #ffffff;
+  --timetable-bg-secondary: #f8f9fa;
+  --timetable-bg-tertiary: #e9ecef;
+  --timetable-bg-hover: #f1f3f4;
+  
+  /* 시간표 테두리 색상 */
+  --timetable-border-primary: #dee2e6;
+  --timetable-border-secondary: #ced4da;
+  --timetable-border-accent: #007bff;
+  
+  /* 시간표 텍스트 색상 */
+  --timetable-text-primary: #212529;
+  --timetable-text-secondary: #6c757d;
+  --timetable-text-muted: #adb5bd;
+  --timetable-text-light: #ffffff;
+  
+  /* 시간표 간격 */
+  --timetable-spacing-xs: 2px;
+  --timetable-spacing-sm: 4px;
+  --timetable-spacing-md: 8px;
+  --timetable-spacing-lg: 16px;
+  --timetable-spacing-xl: 24px;
+  
+  /* 시간표 크기 */
+  --timetable-cell-height: 30px;
+  --timetable-header-height: 50px;
+  --timetable-time-column-width: 80px;
+  --timetable-min-height: 400px;
+  
+  /* 시간표 애니메이션 */
+  --timetable-animation-duration: 0.3s;
+  --timetable-animation-timing: ease;
+  
+  /* 시간표 반응형 브레이크포인트 */
+  --timetable-breakpoint-sm: 480px;
+  --timetable-breakpoint-md: 768px;
+  --timetable-breakpoint-lg: 1024px;
+  --timetable-breakpoint-xl: 1200px;
+
+  /* ===== 사이드바 길이 ===== */
+  --sidebar-length: 256px;
+  --sidebar-length-mobile: 200px;
+  --main-content-padding-mobile: 16px;
+}
