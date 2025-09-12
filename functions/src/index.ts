@@ -24,3 +24,19 @@ export {
   createAcademyFunction as createAcademy,
   createTestDataFunction as createTestData,
 } from "./modules/academy/academyFunctions";
+
+// ==================== 데이터베이스 관리 함수 ====================
+export {
+  createStudentFunction as createStudent,
+  getStudentsFunction as getStudents,
+  updateStudentFunction as updateStudent,
+  checkInFunction as checkIn,
+  checkOutFunction as checkOut,
+  getAttendanceByDateFunction as getAttendanceByDate,
+  assignSeatFunction as assignSeat,
+  unassignSeatFunction as unassignSeat,
+  getSeatsByLayoutFunction as getSeatsByLayout,
+  createSeatLayoutFunction as createSeatLayout,
+  getDashboardDataFunction as getDashboardData,
+  getStudentCompleteInfoFunction as getStudentCompleteInfo,
+} from "./modules/database/databaseFunctions";

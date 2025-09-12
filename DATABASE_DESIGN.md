@@ -47,10 +47,8 @@ academies (컬렉션)
     ├── student_timetables (하위 컬렉션)
     ├── seats (하위 컬렉션)
     ├── seat_assignments (하위 컬렉션)
-    ├── seat_layouts (하위 컬렉션)  <-- 추가됨
-    ├── admins (하위 컬렉션)
-    ├── academy_settings (하위 컬렉션)
-    └── attendance_summaries (하위 컬렉션)
+    ├── seat_layouts (하위 컬렉션)
+    └── admins (하위 컬렉션)
 ```
 
 -----
@@ -109,6 +107,7 @@ type AttendanceStatus = 'present' | 'dismissed' | 'unauthorized_absent' | 'autho
 interface AttendanceRecord {
   studentId: string;               // 학생 문서 ID
   studentName: string;             // 학생 이름 (비정규화)
+  seatId?: string;                 // 좌석 문서 ID (좌석 배치표를 통한 출결 관리)
   date: string;                    // 출석 날짜 "2024-03-15" 형태로 저장하여 날짜별 쿼리 최적화
   status: AttendanceStatus;        // 출석 상태
   checkInTime?: FirestoreTimestamp;    // 등원 시간
@@ -158,13 +157,18 @@ interface StudentTimetable {
 `academies/{academyId}/seats`
 
 ```typescript
-// 문서 ID: 자동 생성 (이 ID가 seat_layouts의 seatId와 연결됩니다)
+// 문서 ID: 자동 생성
 type SeatStatus = 'vacant' | 'occupied' | 'unavailable';
 
 interface Seat {
   seatNumber: string;              // 좌석 번호 (예: "A-15")
   status: SeatStatus;              // 좌석 상태
   isActive: boolean;               // 활성화 여부
+  layoutName: string;              // 어떤 배치도에 속하는지 (예: "main_hall")
+  position: {                      // 배치도 내 좌석 위치
+    x: number;                     // 열 위치 (좌표)
+    y: number;                     // 행 위치 (좌표)
+  };
   createdAt: FirestoreTimestamp;
   updatedAt: FirestoreTimestamp;
 }
@@ -178,36 +182,31 @@ interface Seat {
 type AssignmentStatus = 'active' | 'released';
 
 interface SeatAssignment {
-  // 문서 ID: "studentId_seatId_YYYYMMDD" 형태로 구성하여 중복 방지
+  // 문서 ID: studentId (현재 배정된 좌석만 저장, 히스토리는 별도 관리)
   seatId: string;                    // `seats` 컬렉션의 문서 ID
-  studentId: string;                 // `students` 컬렉션의 문서 ID
+  assignedAt: FirestoreTimestamp;    // 배정 시간
   status: AssignmentStatus;          // 배정 상태
-  createdAt: FirestoreTimestamp;
   updatedAt: FirestoreTimestamp;
 }
 ```
 
-### 8\. 좌석 배치도 컬렉션 (seat\_layouts) - 신규
+### 8\. 좌석 배치도 컬렉션 (seat\_layouts)
 
 `academies/{academyId}/seat_layouts`
 
-이 컬렉션은 **컨테이너(절대 위치) 방식**의 UI 구현을 위해 좌석의 시각적, 공간적 정보를 저장합니다.
+배치도별 메타데이터를 저장합니다. 실제 좌석 위치는 `seats` 컬렉션의 `position` 필드에서 관리됩니다.
 
 ```typescript
 // 문서 ID: "main_hall" (예: 주 학습관)
 interface SeatLayout {
   name: string;          // 배치도 이름 (예: "주 학습관")
+  description?: string;  // 배치도 설명
   gridSize: {            // 배치도를 그릴 그리드의 크기
     rows: number;        // 총 행 수
     cols: number;        // 총 열 수
   };
-  // 배치도에 포함된 모든 요소의 배열
-  elements: {
-    x: number;           // 열 위치 (좌표)
-    y: number;           // 행 위치 (좌표)
-    seatId?: string;     // `seats` 컬렉션의 문서 ID
-    seatNumber?: string; // 좌석 번호 (UI 표시용)
-  }[];
+  isActive: boolean;     // 활성화 여부
+  createdAt: FirestoreTimestamp;
   updatedAt: FirestoreTimestamp;
 }
 ```
@@ -221,7 +220,6 @@ interface Admin {
   authUid: string;                  // Firebase Auth UID
   name: string;                     // 관리자 이름
   role: 'admin' | 'super_admin';    // 관리자 역할
-  permissions: string[];            // 세부 권한 목록
   email: string;                    // 이메일
   phone?: string;                   // 전화번호
   isActive: boolean;                // 활성 상태
@@ -230,25 +228,20 @@ interface Admin {
 }
 ```
 
-### 10\. 학원 설정 컬렉션 (academy\_settings)
+### 10\. 관리자 정보 컬렉션 (admins)
 
-`academies/{academyId}/academy_settings`
-
-```typescript
-// 문서 ID: "main" (고정)
-interface AcademySettings {
-  // ... (이전과 동일)
-}
-```
-
-### 11\. 출석 통계 컬렉션 (attendance\_summaries)
-
-`academies/{academyId}/attendance_summaries`
+`academies/{academyId}/admins`
 
 ```typescript
-// 문서 ID: "YYYY-MM" 형태 (예: "2024-03")
-interface AttendanceSummary {
-  // ... (이전과 동일)
+interface Admin {
+  authUid: string;                  // Firebase Auth UID
+  name: string;                     // 관리자 이름
+  role: 'admin' | 'super_admin';    // 관리자 역할
+  email: string;                    // 이메일
+  phone?: string;                   // 전화번호
+  isActive: boolean;                // 활성 상태
+  createdAt: FirestoreTimestamp;
+  updatedAt: FirestoreTimestamp;
 }
 ```
 
@@ -276,26 +269,36 @@ interface AttendanceSummary {
 
 ### 데이터 관계 및 역할 분리
 
-  - **`seat_layouts`**: "어떤 좌석이 어디에 있는가?" (공간, 위치 정보)
-  - **`seats`**: "그 좌석은 사용 가능한가?" (상태 정보)
-  - **`seat_assignments`**: "그 좌석에 누가 앉아 있는가?" (배정 정보)
+  - **`seat_layouts`**: "배치도 메타데이터" (그리드 크기, 이름 등)
+  - **`seats`**: "좌석 상태 및 위치" (사용 가능성, 좌표)
+  - **`seat_assignments`**: "현재 좌석 배정" (누가 어느 좌석에)
+  - **`attendance_records`**: "출석 기록" (언제, 어느 좌석에서)
 
-(이하 이전과 동일)
+### 주요 개선 사항
 
-### 🚀 최종 컬렉션 구조 (11개)
+1. **좌석-출결 연동**: `attendance_records`에 `seatId` 필드 추가로 좌석 배치표를 통한 출결 관리 지원
+2. **데이터 구조 단순화**: 좌석 위치 정보를 `seats` 컬렉션에 통합하여 중복 제거
+3. **배정 시스템 개선**: 문서 ID를 `studentId`로 단순화하여 현재 배정만 관리
+4. **불필요한 컬렉션 제거**: `academy_settings`, `attendance_summaries` 제거로 복잡성 감소
+
+### 🚀 최종 컬렉션 구조 (9개) - 개선됨
 
 1.  **students** - 학생 정보
 2.  **parents** - 학부모 정보
-3.  **attendance\_records** - 출석 기록
+3.  **attendance\_records** - 출석 기록 (좌석 연동 기능 추가)
 4.  **class\_sections** - 수업 섹션
 5.  **student\_timetables** - 학생 개인 시간표
-6.  **seats** - 좌석 정보
-7.  **seat\_assignments** - 좌석 배정
-8.  **seat\_layouts** - **좌석 배치도 (신규)**
-9.  **admins** - 관리자 정보
-10. **academy\_settings** - 학원 설정
-11. **attendance\_summaries** - 출석 통계
+6.  **seats** - 좌석 정보 (위치 정보 통합)
+7.  **seat\_assignments** - 좌석 배정 (단순화)
+8.  **seat\_layouts** - 좌석 배치도 (메타데이터만)
+9.  **admins** - 관리자 정보 (권한 시스템 단순화)
 
 -----
 
-**참고**: 이 설계는 실무 피드백을 반영한 개선된 버전이며, 실제 구현 과정에서 요구사항에 따라 추가 수정될 수 있습니다.
+**참고**: 이 설계는 실무 피드백과 요구사항 분석을 반영한 최적화된 버전이며, 실제 구현 과정에서 요구사항에 따라 추가 수정될 수 있습니다.
+
+### 개선 요약
+- 좌석-출결 연동 기능 추가
+- 데이터 구조 단순화 및 중복 제거
+- 불필요한 컬렉션 2개 제거 (11개 → 9개)
+- 성능 및 유지보수성 향상

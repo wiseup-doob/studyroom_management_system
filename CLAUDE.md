@@ -54,14 +54,18 @@ firebase deploy --only functions  # Deploy backend only
 - **Routing**: React Router DOM with role-based protected routes
 - **State Management**: React Context for authentication
 - **Firebase Integration**: Auth, Firestore, Functions
+- **Development server**: Runs on port 3000 with auto-open browser
 
 ### Key Services (`frontend/src/services/`)
 - `authService.ts`: User authentication and profile management
 - `firestoreService.ts`: Database operations
 - `securityService.ts`: Security validation and rule enforcement
+- `securityRuleTestService.ts`: Security rule testing
 - `dataIsolationService.ts`: Multi-tenant data isolation
 - `errorHandlingService.ts`: Centralized error handling
 - `backendService.ts`: Firebase Functions integration
+- `apiService.ts`: API communication service
+- `firebase.ts`: Firebase configuration and initialization
 
 ### Type System (`frontend/src/types/`)
 - `auth.ts`: Authentication and user profile types
@@ -69,11 +73,16 @@ firebase deploy --only functions  # Deploy backend only
 - `student.ts`: Student-specific types
 - `security.ts`: Security and validation types
 - `firebase.ts`: Firebase configuration types
+- `attendance.ts`: Attendance system types
+- `mockData.ts`: Mock data type definitions
+- `index.ts`: Main type exports
 
 ### Component Structure
-- **Role-based routing**: Separate protected routes for each user role
+- **Domain components**: Specialized components in `components/domain/Attendance/`
+- **Layout components**: `MainLayout` with sidebar and main content areas
+- **Common components**: Header, Footer, Sidebar in `components/common/`
 - **Security components**: Error handling and validation components
-- **Common components**: Reusable Header/Footer components
+- **Authentication**: Protected routes and login forms
 
 ### Firebase Configuration
 - **Emulators**: Auth (9099), Functions (5001), Firestore (8080), Hosting (5000), UI (4343)
@@ -107,6 +116,8 @@ Each environment file needs:
 - **Authentication**: Uses Firebase Auth with custom claims for role management
 - **Error Handling**: Centralized through ErrorHandler component and errorHandlingService
 - **Testing**: Firebase emulators required for local development
+- **Attendance System**: Features seating charts, student search, and classroom management
+- **CSS Modules**: Component-scoped styling with CSS files alongside components
 
 ## Build Process
 
