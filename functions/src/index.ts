@@ -1,10 +1,11 @@
 /**
  * WiseUp 관리 시스템 - Firebase Cloud Functions
  *
- * 멀티테넌트 아키텍처를 지원하는 백엔드 함수들
- * - 사용자 관리 (등록, 역할 부여)
- * - 학원 관리 (생성, 설정)
- * - 보안 및 권한 관리
+ * 사용자 기반 격리 아키텍처 (DATABASE_DESIGN.md 준수)
+ * - Google 인증 기반 개인 데이터 관리
+ * - 완전한 데이터 격리 (각 사용자별 독립 공간)
+ * - 고급 시간표 관리 (2레이어 구조)
+ * - 시간표 링크 공유 및 협업 기능
  */
 
 import * as admin from "firebase-admin";
@@ -12,31 +13,72 @@ import * as admin from "firebase-admin";
 // Firebase Admin SDK 초기화
 admin.initializeApp();
 
-// ==================== 사용자 관리 함수 ====================
-export {
-  setUserRoleFunction as setUserRole,
-  createUserFunction as createUser,
-  getUsersFunction as getUsers,
-} from "./modules/user/userFunctions";
+// ==================== 개인 사용자 관리 함수 ====================
 
-// ==================== 학원 관리 함수 ====================
+// 사용자 프로필 관리
 export {
-  createAcademyFunction as createAcademy,
-  createTestDataFunction as createTestData,
-} from "./modules/academy/academyFunctions";
+  createOrUpdateUserProfile,
+  getUserProfile,
+  deactivateUserProfile,
+  deleteUserProfile,
+  restoreUserProfile,
+  getUserDataStats,
+  createUserDataBackup,
+} from "./modules/personal/userProfile";
 
-// ==================== 데이터베이스 관리 함수 ====================
+// 출석 관리
 export {
-  createStudentFunction as createStudent,
-  getStudentsFunction as getStudents,
-  updateStudentFunction as updateStudent,
-  checkInFunction as checkIn,
-  checkOutFunction as checkOut,
-  getAttendanceByDateFunction as getAttendanceByDate,
-  assignSeatFunction as assignSeat,
-  unassignSeatFunction as unassignSeat,
-  getSeatsByLayoutFunction as getSeatsByLayout,
-  createSeatLayoutFunction as createSeatLayout,
-  getDashboardDataFunction as getDashboardData,
-  getStudentCompleteInfoFunction as getStudentCompleteInfo,
-} from "./modules/database/databaseFunctions";
+  checkIn,
+  checkOut,
+  getAttendanceRecords,
+  updateAttendanceSummary,
+} from "./modules/personal/attendanceManagement";
+
+// 시간표 관리 (고급 2레이어 구조)
+export {
+  createTimetable,
+  getTimetables,
+  updateTimetableSchedule,
+  autoFillSelfStudy,
+  deleteTimetable,
+} from "./modules/personal/timetableManagement";
+
+// 시간표 공유 및 협업 기능
+export {
+  createShareLink,
+  getSharedSchedule,
+  contributeSchedule,
+  processContribution,
+  manageShareLink,
+} from "./modules/personal/shareScheduleManagement";
+
+// 좌석 관리
+export {
+  createSeat,
+  getSeats,
+  assignSeat,
+  unassignSeat,
+  createSeatLayout,
+  getSeatLayouts,
+  getCurrentSeatAssignment,
+} from "./modules/personal/seatManagement";
+
+// 설정 관리
+export {
+  getSettings,
+  updateSettings,
+  updateNotificationSettings,
+  updateTheme,
+  updateLanguage,
+  resetSettings,
+} from "./modules/personal/settingsManagement";
+
+// 학생 관리
+export {
+  createStudent,
+  getStudents,
+  getStudent,
+  updateStudent,
+  deleteStudent,
+  searchStudents,
+} from "./modules/personal/studentManagement";

@@ -5,8 +5,6 @@ export interface Admin {
   authUid: string;                 // Firebase Auth UID
   name: string;                    // 관리자 이름
   academyId: string;               // 소속 학원 ID
-  role: 'admin' | 'super_admin';   // 관리자 역할
-  permissions: AdminPermission[];  // 권한 목록
   contactInfo?: {
     phone?: string;
     email?: string;
@@ -21,8 +19,8 @@ export type AdminPermission =
   | 'manage_attendance'    // 출석 관리
   | 'manage_seats'         // 좌석 관리
   | 'view_reports'         // 리포트 조회
-  | 'manage_academy'       // 학원 관리 (슈퍼 관리자만)
-  | 'manage_admins';       // 관리자 관리 (슈퍼 관리자만)
+  | 'manage_academy'       // 학원 관리
+  | 'manage_admins';       // 관리자 관리
 
 export interface AcademySettings {
   id?: string;                     // Firestore 문서 ID

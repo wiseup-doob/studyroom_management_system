@@ -1,121 +1,81 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // 멀티테넌트 아키텍처 - academyId 기반 데이터 격리
-    
-    // 관리자 컬렉션 - 슈퍼 관리자만 접근 가능
-    match /admins/{adminId} {
-      allow read: if request.auth != null && 
-        request.auth.token.super_admin == true;
-      allow write: if request.auth != null && 
-        request.auth.token.super_admin == true;
-    }
-    
-    // 학원별 데이터 - academyId 기반 격리
-    match /academies/{academyId} {
-      // 학원 데이터 접근 권한 검증
-      allow read, write: if request.auth != null && 
-        request.auth.token.academyId == academyId;
-      
-      // 학생 데이터 - 관리자 또는 본인만 접근 가능
-      match /students/{studentId} {
-        allow read: if request.auth != null && 
-          request.auth.token.academyId == academyId &&
-          (request.auth.token.admin == true || 
-           request.auth.uid == get(/databases/$(database)/documents/academies/$(academyId)/students/$(studentId)).data.authUid);
-        allow write: if request.auth != null && 
-          request.auth.token.academyId == academyId && 
-          request.auth.token.admin == true;
-      }
-      
-      // 출석 기록 - 관리자 또는 해당 학생만 접근 가능
+    // 사용자 기반 데이터 격리 - 로그인한 계정별로 데이터 분리
+
+    // 사용자별 데이터 - uid 기반 격리
+    match /users/{userId} {
+      // 사용자는 본인 데이터만 접근 가능
+      allow read, write: if request.auth != null &&
+        request.auth.uid == userId;
+
+      // 출석 기록 - 해당 사용자만 접근 가능
       match /attendance_records/{recordId} {
-        allow read: if request.auth != null && 
-          request.auth.token.academyId == academyId &&
-          (request.auth.token.admin == true ||
-           request.auth.uid == get(/databases/$(database)/documents/academies/$(academyId)/students/$(resource.data.studentId)).data.authUid);
-        allow write: if request.auth != null && 
-          request.auth.token.academyId == academyId && 
-          request.auth.token.admin == true;
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
       }
-      
-      // 학생 시간표 - 관리자 또는 해당 학생만 접근 가능
-      match /student_timetables/{studentId} {
-        allow read: if request.auth != null && 
-          request.auth.token.academyId == academyId &&
-          (request.auth.token.admin == true ||
-           request.auth.uid == get(/databases/$(database)/documents/academies/$(academyId)/students/$(studentId)).data.authUid);
-        allow write: if request.auth != null && 
-          request.auth.token.academyId == academyId && 
-          request.auth.token.admin == true;
+
+      // 시간표 - 해당 사용자만 접근 가능
+      match /timetables/{timetableId} {
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
       }
-      
-      // 좌석 배정 - 관리자 또는 해당 학생만 접근 가능
+
+      // 좌석 배정 - 해당 사용자만 접근 가능
       match /seat_assignments/{assignmentId} {
-        allow read: if request.auth != null && 
-          request.auth.token.academyId == academyId &&
-          (request.auth.token.admin == true ||
-           request.auth.uid == get(/databases/$(database)/documents/academies/$(academyId)/students/$(resource.data.studentId)).data.authUid);
-        allow write: if request.auth != null && 
-          request.auth.token.academyId == academyId && 
-          request.auth.token.admin == true;
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
       }
-      
-      // 좌석 정보 - 해당 학원 사용자만 접근 가능
+
+      // 좌석 정보 - 해당 사용자만 접근 가능
       match /seats/{seatId} {
-        allow read: if request.auth != null && 
-          request.auth.token.academyId == academyId;
-        allow write: if request.auth != null && 
-          request.auth.token.academyId == academyId && 
-          request.auth.token.admin == true;
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
       }
-      
-      // 학급 정보 - 해당 학원 사용자만 접근 가능
+
+      // 학급 정보 - 해당 사용자만 접근 가능
       match /class_sections/{sectionId} {
-        allow read: if request.auth != null && 
-          request.auth.token.academyId == academyId;
-        allow write: if request.auth != null && 
-          request.auth.token.academyId == academyId && 
-          request.auth.token.admin == true;
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
       }
-      
-      // 출석 요약 - 해당 학원 사용자만 접근 가능
+
+      // 출석 요약 - 해당 사용자만 접근 가능
       match /attendance_summaries/{summaryId} {
-        allow read: if request.auth != null && 
-          request.auth.token.academyId == academyId;
-        allow write: if request.auth != null && 
-          request.auth.token.academyId == academyId && 
-          request.auth.token.admin == true;
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
       }
-      
-      // 좌석 배치도 - 해당 학원 사용자만 접근 가능
+
+      // 좌석 배치도 - 해당 사용자만 접근 가능
       match /seat_layouts/{layoutId} {
-        allow read: if request.auth != null && 
-          request.auth.token.academyId == academyId;
-        allow write: if request.auth != null && 
-          request.auth.token.academyId == academyId && 
-          request.auth.token.admin == true;
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
       }
-      
-      // 학원 설정 - 해당 학원 관리자만 접근 가능
+
+      // 설정 - 해당 사용자만 접근 가능
       match /settings/{settingId} {
-        allow read: if request.auth != null && 
-          request.auth.token.academyId == academyId;
-        allow write: if request.auth != null && 
-          request.auth.token.academyId == academyId && 
-          request.auth.token.admin == true;
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
       }
-      
+
+      // 시간표 공유 링크 관리 - 본인만 접근 가능
+      match /shared_schedules/{scheduleId} {
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
+      }
+
+      // 외부 일정 기여 수집 - 본인만 접근 가능
+      match /schedule_contributions/{contributionId} {
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
+      }
+
       // 기타 하위 컬렉션 - 기본 권한 적용
       match /{subCollection}/{docId} {
-        allow read: if request.auth != null && 
-          request.auth.token.academyId == academyId;
-        allow write: if request.auth != null && 
-          request.auth.token.academyId == academyId && 
-          request.auth.token.admin == true;
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
       }
     }
-    
+
     // 루트 레벨 컬렉션 접근 차단 (보안 강화)
     match /{document=**} {
       allow read, write: if false;

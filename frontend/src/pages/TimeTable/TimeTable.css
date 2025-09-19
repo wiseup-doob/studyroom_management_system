@@ -1,0 +1,6 @@
+/* TimeTable 페이지 스타일 - 깔끔한 흰색 배경 */
+.timetable-container {
+  padding: 2rem;
+  min-height: 100vh;
+  background: #ffffff;
+}

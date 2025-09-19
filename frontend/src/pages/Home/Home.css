@@ -1,16 +1,6 @@
-/* Home 페이지 스타일 */
+/* Home 페이지 스타일 - 깔끔한 흰색 배경 */
 .home-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  padding: 2rem;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
-
-.home-container h1 {
-  font-size: 3rem;
-  font-weight: 700;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-  margin: 0;
+  background: #ffffff;
 }

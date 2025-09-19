@@ -77,3 +77,30 @@ export interface AttendanceStats {
   emptyCount: number;
   attendanceRate: number;
 }
+
+// 출석 기록 타입
+export interface Attendance {
+  id: string;
+  date: Date;
+  checkInTime?: Date;
+  checkOutTime?: Date;
+  status: 'present' | 'absent' | 'late' | 'early_leave';
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// 출석 요약 타입
+export interface AttendanceSummary {
+  id: string;
+  period: string; // 'daily' | 'weekly' | 'monthly'
+  startDate: Date;
+  endDate: Date;
+  totalDays: number;
+  presentDays: number;
+  absentDays: number;
+  lateDays: number;
+  attendanceRate: number;
+  createdAt: Date;
+  updatedAt: Date;
+}

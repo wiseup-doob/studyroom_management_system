@@ -156,7 +156,7 @@ deploy_full() {
     firebase use $PROJECT_ID
     
     echo -e "${YELLOW}전체 배포를 시작합니다...${NC}"
-    firebase deploy
+    firebase deploy --only hosting,functions,firestore
     
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}전체 배포가 성공적으로 완료되었습니다!${NC}"

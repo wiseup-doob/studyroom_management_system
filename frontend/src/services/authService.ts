@@ -1,66 +1,118 @@
-import { 
-  signInWithEmailAndPassword, 
+import {
+  signInWithPopup,
+  GoogleAuthProvider,
   signOut
 } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
-import { UserProfile, CustomClaims } from '../types/auth';
+import { UserProfile } from '../types/auth';
 
 class AuthService {
-  async login(email: string, password: string): Promise<UserProfile> {
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+  private googleProvider = new GoogleAuthProvider();
 
-      // ID 토큰에서 직접 클레임 정보를 가져옵니다.
-      const idTokenResult = await user.getIdTokenResult(true); // true로 강제 갱신
-      const claims = idTokenResult.claims as unknown as CustomClaims;
-      
-      const academyId = claims.academyId;
-      const role = claims.role;
-      
-      if (!academyId || !role) {
-        // 커스텀 클레임이 없는 경우 (아직 권한이 설정되지 않은 사용자)
-        return {
-          uid: user.uid,
-          email: user.email || '',
-          academyId: '',
-          role: 'pending' as any,
-          name: user.displayName || '',
-          isActive: true
-        };
-      }
-      
-      // 이제 이 academyId와 role을 사용하여 Firestore에서 추가 정보를 가져옵니다.
-      const userProfile = await this.getUserProfile(academyId, role, user.uid);
-      return userProfile;
+  async login(): Promise<void> {
+    try {
+      const result = await signInWithPopup(auth, this.googleProvider);
+      const user = result.user;
+
+      // 사용자 프로필이 Firestore에 없으면 생성
+      await this.createOrUpdateUserProfile(user);
     } catch (error: any) {
       throw new Error(this.getErrorMessage(error));
     }
   }
 
-  async getUserProfile(academyId: string, role: string, uid: string): Promise<UserProfile> {
+  private async createOrUpdateUserProfile(user: any): Promise<void> {
     try {
-      let userDoc;
-      
-      if (role === 'student') {
-        // students 컬렉션에서 조회
-        const studentDocRef = doc(db, 'academies', academyId, 'students', uid);
-        userDoc = await getDoc(studentDocRef);
-      } else if (role === 'admin' || role === 'super_admin') {
-        // admins 컬렉션에서 조회 (수정된 경로)
-        const adminDocRef = doc(db, 'academies', academyId, 'admins', uid);
-        userDoc = await getDoc(adminDocRef);
-      } else {
-        throw new Error('알 수 없는 사용자 역할입니다.');
-      }
+      const userRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userRef);
 
       if (!userDoc.exists()) {
-        throw new Error('사용자 정보를 찾을 수 없습니다.');
+        // 새 사용자 프로필 생성
+        const userData = {
+          authUid: user.uid,
+          name: user.displayName || '',
+          email: user.email || '',
+          profilePicture: user.photoURL || '',
+          googleId: user.uid,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+
+        await setDoc(userRef, userData);
+      } else {
+        // 기존 사용자 프로필 업데이트
+        await setDoc(userRef, {
+          name: user.displayName || '',
+          email: user.email || '',
+          profilePicture: user.photoURL || '',
+          updatedAt: new Date()
+        }, { merge: true });
+      }
+    } catch (error) {
+      console.error('사용자 프로필 생성/업데이트 실패:', error);
+      throw error;
+    }
+  }
+
+  async getUserProfile(uid: string): Promise<UserProfile> {
+    try {
+      console.log('getUserProfile 호출:', { uid });
+      console.log('현재 인증 상태:', { 
+        currentUser: auth.currentUser?.uid,
+        isAuthenticated: !!auth.currentUser
+      });
+
+      // 사용자별 컬렉션에서 조회
+      const userDocRef = doc(db, 'users', uid);
+      console.log('Firestore 문서 경로:', userDocRef.path);
+      
+      const userDoc = await getDoc(userDocRef);
+      console.log('문서 존재 여부:', userDoc.exists());
+
+      if (!userDoc.exists()) {
+        console.log('사용자 프로필이 없음, 생성 시도');
+        
+        // 사용자 프로필이 없으면 현재 인증된 사용자 정보로 생성
+        const currentUser = auth.currentUser;
+        if (!currentUser || currentUser.uid !== uid) {
+          console.error('인증된 사용자 정보 불일치:', {
+            requestedUid: uid,
+            currentUserUid: currentUser?.uid
+          });
+          throw new Error('사용자 정보를 찾을 수 없습니다.');
+        }
+
+        console.log('사용자 프로필 생성 시작:', {
+          uid: currentUser.uid,
+          email: currentUser.email,
+          displayName: currentUser.displayName
+        });
+
+        // 자동으로 사용자 프로필 생성
+        await this.createOrUpdateUserProfile(currentUser);
+        
+        // 다시 조회
+        const newUserDoc = await getDoc(userDocRef);
+        if (!newUserDoc.exists()) {
+          throw new Error('사용자 프로필 생성에 실패했습니다.');
+        }
+        
+        const userData = newUserDoc.data();
+        console.log('사용자 프로필 생성 완료:', userData);
+        
+        return {
+          uid,
+          email: userData.email || '',
+          name: userData.name || '',
+          isActive: userData.isActive
+        };
       }
 
       const userData = userDoc.data();
-      
+      console.log('기존 사용자 프로필 조회:', userData);
+
       // 사용자가 비활성화된 경우
       if (!userData.isActive) {
         throw new Error('비활성화된 계정입니다.');
@@ -69,12 +121,13 @@ class AuthService {
       return {
         uid,
         email: userData.email || '',
-        academyId,
-        role: role as 'student' | 'admin' | 'super_admin',
         name: userData.name || '',
         isActive: userData.isActive
       };
     } catch (error: any) {
+      console.error('getUserProfile 오류:', error);
+      console.error('오류 코드:', error.code);
+      console.error('오류 메시지:', error.message);
       throw new Error(this.getErrorMessage(error));
     }
   }
@@ -92,56 +145,45 @@ class AuthService {
     if (!user) return null;
 
     try {
-      const idTokenResult = await user.getIdTokenResult();
-      const claims = idTokenResult.claims as unknown as CustomClaims;
-      
-      const academyId = claims.academyId;
-      const role = claims.role;
-      
-      if (!academyId || !role) {
-        return null;
-      }
-      
-      return await this.getUserProfile(academyId, role, user.uid);
+      return await this.getUserProfile(user.uid);
     } catch (error) {
       console.error('현재 사용자 정보 조회 실패:', error);
       return null;
     }
   }
 
-  async getIdTokenClaims(): Promise<{academyId: string, role: string}> {
+  async getIdTokenClaims(): Promise<{}> {
     const user = auth.currentUser;
     if (!user) {
       throw new Error('로그인된 사용자가 없습니다.');
     }
 
-    const idTokenResult = await user.getIdTokenResult();
-    const claims = idTokenResult.claims as unknown as CustomClaims;
-    
-    return {
-      academyId: claims.academyId,
-      role: claims.role
-    };
+    // 사용자 기반 격리에서는 커스텀 클레임이 불필요
+    return {};
   }
 
   private getErrorMessage(error: any): string {
     const errorCode = error.code;
     
     switch (errorCode) {
-      case 'auth/user-not-found':
-        return '등록되지 않은 이메일입니다.';
-      case 'auth/wrong-password':
-        return '잘못된 비밀번호입니다.';
-      case 'auth/invalid-email':
-        return '유효하지 않은 이메일 형식입니다.';
-      case 'auth/user-disabled':
-        return '비활성화된 계정입니다.';
+      case 'auth/popup-closed-by-user':
+        return '로그인 팝업이 사용자에 의해 닫혔습니다.';
+      case 'auth/popup-blocked':
+        return '팝업이 차단되었습니다. 팝업 차단을 해제해주세요.';
+      case 'auth/cancelled-popup-request':
+        return '로그인 요청이 취소되었습니다.';
+      case 'auth/account-exists-with-different-credential':
+        return '이미 다른 방법으로 가입된 계정입니다.';
+      case 'auth/invalid-credential':
+        return '유효하지 않은 인증 정보입니다.';
+      case 'auth/operation-not-allowed':
+        return 'Google 로그인이 허용되지 않습니다.';
       case 'auth/too-many-requests':
         return '너무 많은 로그인 시도로 인해 일시적으로 차단되었습니다.';
       case 'auth/network-request-failed':
         return '네트워크 연결을 확인해주세요.';
       default:
-        return error.message || '로그인 중 오류가 발생했습니다.';
+        return error.message || 'Google 로그인 중 오류가 발생했습니다.';
     }
   }
 }

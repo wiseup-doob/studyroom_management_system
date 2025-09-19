@@ -1,304 +1,524 @@
-물론입니다. 앞서 논의한 **컨테이너(절대 위치) 방식**에 완벽하게 대응할 수 있도록, **좌석 배치도(`seat_layouts`)** 정보를 저장하는 컬렉션을 추가하여 전체 데이터베이스 설계 문서를 업데이트했습니다.
-
-핵심 변경 사항은 다음과 같습니다.
-
-  * **`seat_layouts` 하위 컬렉션 추가**: 각 학원(`academy`) 아래에 좌석의 시각적 위치 정보(x, y 좌표)를 저장하는 컬렉션을 추가했습니다.
-  * **최종 컬렉션 구조 업데이트**: 신규 컬렉션을 포함하여 총 11개의 컬렉션으로 구조를 확정했습니다.
-
-아래는 컨테이너 방식을 적용한 최종 `.md` 문서입니다.
-
------
-
-# WiseUp 관리 시스템 - 데이터베이스 설계 (Multi-tenant)
+# WiseUp 관리 시스템 - 데이터베이스 설계 (사용자 기반 격리 버전)
 
 ## 📋 개요
 
-WiseUp 관리 시스템은 Firebase Firestore를 기반으로 한 NoSQL 데이터베이스를 사용합니다. 이 시스템은 **여러 학원 지점(테넌트)이 하나의 애플리케이션을 공유**하되, 각 지점의 데이터는 완벽히 분리되는 **멀티테넌트(Multi-tenant) 아키텍처**로 설계되었습니다. 각 지점은 고유한 `academyId`를 통해 데이터를 격리하며, 학생 관리, 출석 관리, 시간표 관리, 좌석 관리 등의 기능을 제공합니다.
+WiseUp 관리 시스템은 Firebase Firestore를 기반으로 한 NoSQL 데이터베이스를 사용합니다. 이 시스템은 **사용자 기반 데이터 격리(User-based Data Isolation) 아키텍처**로 설계되어, 각 사용자는 자신의 데이터만 접근할 수 있습니다.
+
+이 버전에서는 각 로그인한 사용자가 개별적인 데이터 공간을 가지며, 다른 사용자의 데이터에는 접근할 수 없습니다. 사용자는 Firebase Auth의 UID를 통해 자신만의 **개인 데이터에만 접근 권한**을 가집니다.
 
 ## 🎯 시스템 요구사항
 
 ### 주요 기능
 
-  - 학생 관리 (학생 정보, 학부모 연락처 관리)
-  - 출석 관리 (출석체크, 출석 기록, 통계)
-  - 시간표 관리 (강의 카탈로그, 학생 수업, 개인 시간표)
-  - 좌석 관리 (자율학습실 좌석 배정 및 배치도 편집)
+  - 개인 사용자 관리 (Google 계정 연동 로그인)
+  - 개인 출석 관리
+  - **고급 시간표 관리** (2레이어 구조: 등원/하원 + 세부일정)
+  - **시간표 링크 공유** (외부 사용자가 일정 입력 가능)
+  - **자동 자습시간 채우기** (빈 시간대를 자동으로 자습으로 설정)
+  - 개인 좌석 관리 (배정 및 배치도)
 
-### 사용자 역할
+### 인증 시스템
 
-  - **학생 (Student)**: 특정 지점(`academyId`)에 소속되어 출석체크, 개인 시간표 조회.
-  - **관리자 (Admin)**: 특정 지점(`academyId`)에 소속되어 해당 지점의 모든 기능 접근, 학생 관리, 통계 조회.
-  - **슈퍼 관리자 (Super Admin)**: 시스템 전체를 관리하며 신규 지점(테넌트)을 생성하고 관리자를 임명하는 최상위 역할.
+  - **Google 계정 연동**: Firebase Auth Google Provider를 사용한 소셜 로그인
+  - **사용자 (User)**: Google 로그인 시 Firebase Auth UID를 기반으로 개인 데이터 공간을 가집니다
+  - **데이터 격리**: 각 사용자는 완전히 독립적인 데이터 공간을 가지며, 다른 사용자의 데이터는 볼 수 없습니다
+  - **협업 기능**: 시간표 링크 공유를 통한 제한적 외부 접근 허용
 
 ## 🗄️ 데이터베이스 구조
 
 ### 기본 구조
 
-모든 지점의 데이터는 `academies` 컬렉션 아래에 각 지점의 `academyId`를 문서 ID로 하는 하위 컬렉션(Subcollection)으로 구성됩니다.
+사용자 기반 격리 아키텍처로 변경되었습니다. 각 사용자는 자신만의 독립적인 데이터 공간을 가집니다.
 
 ```
-academies (컬렉션)
-└── {academyId} (문서)
-    ├── details (필드)
-    ├── students (하위 컬렉션)
-    ├── parents (하위 컬렉션)
+users (컬렉션)
+└── {userId} (문서) - Firebase Auth UID (Google 계정)
+    ├── (사용자 기본 정보 필드들)
     ├── attendance_records (하위 컬렉션)
-    ├── class_sections (하위 컬렉션)
-    ├── student_timetables (하위 컬렉션)
+    ├── timetables (하위 컬렉션) ← 2레이어 구조로 확장
+    ├── shared_schedules (하위 컬렉션) ← 시간표 링크 공유 관리
+    ├── schedule_contributions (하위 컬렉션) ← 외부 기여 데이터 수집
     ├── seats (하위 컬렉션)
     ├── seat_assignments (하위 컬렉션)
     ├── seat_layouts (하위 컬렉션)
-    └── admins (하위 컬렉션)
+    ├── class_sections (하위 컬렉션)
+    ├── attendance_summaries (하위 컬렉션)
+    └── settings (하위 컬렉션)
 ```
 
 -----
 
-### 1\. 학생 컬렉션 (students)
+### 1\. 사용자 컬렉션 (users) - Google 계정 기반
 
-`academies/{academyId}/students`
+`users/{userId}`
 
-```typescript
-type Grade = '초1' | '초2' | '초3' | '초4' | '초5' | '초6' | '중1' | 
-  '중2' | '중3' | '고1' | '고2' | '고3';
-
-interface Student {
-  authUid: string;                 // Firebase Auth UID (로그인 및 권한 확인용)
-  name: string;                    // 학생 이름
-  grade: Grade;                    // 학생 학년
-  firstAttendanceDate?: FirestoreTimestamp;  // 첫 등원 날짜
-  lastAttendanceDate?: FirestoreTimestamp;   // 마지막 등원 날짜
-  parentsId?: string;               // `parents` 컬렉션의 ID
-  status: 'active' | 'inactive';   // 학생 상태 (재원, 퇴원)
-  contactInfo?: {                  // 연락처 정보
-    phone?: string;
-    email?: string;
-    address?: string;
-  };
-  createdAt: FirestoreTimestamp;            // 생성일
-  updatedAt: FirestoreTimestamp;            // 수정일
-}
-```
-
-### 2\. 학부모 컬렉션 (parents)
-
-`academies/{academyId}/parents`
+각 사용자의 기본 정보를 저장하는 루트 컬렉션입니다. 문서 ID는 Firebase Auth UID(Google 계정)와 동일합니다.
 
 ```typescript
-interface Parent {
-  name: string;          // 부모 이름
-  contactInfo: {         // 연락처 정보
-    phone: string;
-    email?: string;
-  };
-  childStudentIds: string[]; // 자녀(학생)들의 문서 ID 목록
-  notes?: string;        // 기타 메모
-  createdAt: FirestoreTimestamp;
-  updatedAt: FirestoreTimestamp;
-}
-```
-
-### 3\. 출석 기록 컬렉션 (attendance\_records)
-
-`academies/{academyId}/attendance_records`
-
-```typescript
-type AttendanceStatus = 'present' | 'dismissed' | 'unauthorized_absent' | 'authorized_absent' | 'not_enrolled';
-
-interface AttendanceRecord {
-  studentId: string;               // 학생 문서 ID
-  studentName: string;             // 학생 이름 (비정규화)
-  seatId?: string;                 // 좌석 문서 ID (좌석 배치표를 통한 출결 관리)
-  date: string;                    // 출석 날짜 "2024-03-15" 형태로 저장하여 날짜별 쿼리 최적화
-  status: AttendanceStatus;        // 출석 상태
-  checkInTime?: FirestoreTimestamp;    // 등원 시간
-  checkOutTime?: FirestoreTimestamp;   // 하원 시간
-  notes?: string;                  // 메모
-  isLate?: boolean;                // 지각 여부
+interface User {
+  authUid: string;                 // Firebase Auth UID (Google 계정)
+  name: string;                    // Google 계정 이름
+  email: string;                   // Google 이메일
+  profilePicture?: string;         // Google 프로필 사진 URL
+  googleId: string;               // Google 계정 ID
+  isActive: boolean;               // 사용자 상태 (활성, 비활성)
   createdAt: FirestoreTimestamp;   // 생성일
   updatedAt: FirestoreTimestamp;   // 수정일
 }
 ```
 
-### 4\. 수업 섹션 컬렉션 (class\_sections)
+### 2\. 출석 기록 컬렉션 (attendance\_records)
 
-`academies/{academyId}/class_sections`
+`users/{userId}/attendance_records`
+
+각 사용자의 개인 출석 기록을 저장합니다.
 
 ```typescript
-type DayOfWeek = | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+type AttendanceStatus = 'present' | 'absent' | 'late' | 'early_leave';
 
-interface ClassSection {
-  name: string;                      // 수업명 (예: "고등 수학 I - A반")
-  schedule: {
-    dayOfWeek: DayOfWeek;            // 요일
-    startTime: string;               // 시작 시간 (HH:MM)
-    endTime: string;                 // 종료 시간 (HH:MM)
-  }[];
-  description?: string;              // 수업 설명
-  createdAt: FirestoreTimestamp;    // 생성일
-  updatedAt: FirestoreTimestamp;    // 수정일
+interface AttendanceRecord {
+  date: string;                    // 출석 날짜 (YYYY-MM-DD 형식)
+  status: AttendanceStatus;        // 출석 상태
+  seatId?: string;                 // 배정된 좌석 ID
+  checkInTime?: FirestoreTimestamp; // 입실 시간
+  checkOutTime?: FirestoreTimestamp; // 퇴실 시간
+  notes?: string;                  // 출석 관련 메모
+  createdAt: FirestoreTimestamp;   // 생성일
+  updatedAt: FirestoreTimestamp;   // 수정일
 }
 ```
 
-### 5\. 학생 개인 시간표 컬렉션 (student\_timetables)
+### 3\. 시간표 컬렉션 (timetables) - 2레이어 구조
 
-`academies/{academyId}/student_timetables`
+`users/{userId}/timetables`
 
-```typescript
-// 문서 ID: 학생 ID(studentId)와 동일하게 사용
-interface StudentTimetable {
-  studentId: string;
-  classSectionIds: string[]; // 이 학생에게 배정된 모든 `class_sections`의 문서 ID 목록
-  updatedAt: FirestoreTimestamp; // 시간표가 마지막으로 수정된 시간
-}
-```
-
-### 6\. 좌석 컬렉션 (seats)
-
-`academies/{academyId}/seats`
+각 사용자의 고급 시간표를 저장합니다. 등원/하원 기본 틀과 세부 일정을 분리하여 관리합니다.
 
 ```typescript
-// 문서 ID: 자동 생성
-type SeatStatus = 'vacant' | 'occupied' | 'unavailable';
+type DayOfWeek = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
 
-interface Seat {
-  seatNumber: string;              // 좌석 번호 (예: "A-15")
-  status: SeatStatus;              // 좌석 상태
-  isActive: boolean;               // 활성화 여부
-  layoutName: string;              // 어떤 배치도에 속하는지 (예: "main_hall")
-  position: {                      // 배치도 내 좌석 위치
-    x: number;                     // 열 위치 (좌표)
-    y: number;                     // 행 위치 (좌표)
+interface Timetable {
+  name: string;                    // 시간표 이름
+
+  // 1차 레이어: 등원/하원 기본 틀
+  basicSchedule: {
+    arrivalTime: string;           // 등원 시간 "09:00"
+    departureTime: string;         // 하원 시간 "18:00"
+    daysOfWeek: DayOfWeek[];       // 활성 요일 ["monday", "tuesday", ...]
+    timeSlotInterval: number;      // 시간 단위 (분) 기본값: 30
   };
-  createdAt: FirestoreTimestamp;
-  updatedAt: FirestoreTimestamp;
+
+  // 2차 레이어: 구체적인 일정
+  detailedSchedule: {
+    [dayOfWeek: string]: {         // "monday", "tuesday" 등
+      timeSlots: {
+        startTime: string;         // "10:00"
+        endTime: string;           // "11:30"
+        subject: string;           // "수학", "영어", "자습"
+        type: 'class' | 'self_study'; // 수업/자습 구분
+        isAutoGenerated: boolean;  // 자동생성된 자습시간인지
+        color?: string;            // 시간표 표시 색상
+      }[];
+    };
+  };
+
+  // 공유 기능
+  isShared: boolean;              // 공유 활성화 여부
+  shareToken?: string;            // 링크 공유용 고유 토큰
+  shareSettings: {
+    allowEdit: boolean;           // 외부 편집 허용
+    allowView: boolean;           // 외부 조회 허용
+    expiresAt?: FirestoreTimestamp; // 공유 만료일
+  };
+
+  // 자동 채우기 설정
+  autoFillSettings: {
+    enabled: boolean;             // 자동 자습시간 채우기 활성화
+    defaultSubject: string;       // 기본 자습 과목명 "자습"
+    fillEmptySlots: boolean;      // 빈 시간 자동 채우기
+  };
+
+  isActive: boolean;               // 활성 상태
+  createdAt: FirestoreTimestamp;   // 생성일
+  updatedAt: FirestoreTimestamp;   // 수정일
 }
 ```
 
-### 7\. 좌석 배정 컬렉션 (seat\_assignments)
+### 4\. 시간표 공유 컬렉션 (shared\_schedules)
 
-`academies/{academyId}/seat_assignments`
+`users/{userId}/shared_schedules`
+
+시간표 링크 공유를 관리합니다. 외부 사용자가 시간표에 일정을 추가할 수 있도록 하는 기능입니다.
 
 ```typescript
-type AssignmentStatus = 'active' | 'released';
+interface SharedSchedule {
+  shareToken: string;             // 고유 공유 토큰 (UUID)
+  timetableId: string;           // 원본 시간표 문서 ID
+
+  // 공유 설정
+  permissions: {
+    canEdit: boolean;            // 편집 권한 (일정 추가/수정)
+    canView: boolean;            // 조회 권한
+    canComment: boolean;         // 댓글 권한
+  };
+
+  // 접근 제어
+  accessSettings: {
+    requireName: boolean;        // 이름 입력 필수 여부
+    requireEmail: boolean;       // 이메일 입력 필수 여부
+    maxContributions?: number;   // 최대 기여 횟수
+  };
+
+  // 링크 관리
+  linkSettings: {
+    isActive: boolean;           // 링크 활성 상태
+    expiresAt?: FirestoreTimestamp; // 만료일 (선택적)
+    createdAt: FirestoreTimestamp;  // 생성일
+    lastUsedAt?: FirestoreTimestamp; // 마지막 사용일
+    usageCount: number;          // 사용 횟수
+  };
+
+  // 메타데이터
+  title?: string;                // 공유 링크 제목
+  description?: string;          // 공유 링크 설명
+  createdAt: FirestoreTimestamp; // 생성일
+  updatedAt: FirestoreTimestamp; // 수정일
+}
+```
+
+### 5\. 일정 기여 컬렉션 (schedule\_contributions)
+
+`users/{userId}/schedule_contributions`
+
+외부 사용자가 공유 링크를 통해 추가한 일정 데이터를 수집합니다.
+
+```typescript
+interface ScheduleContribution {
+  shareToken: string;            // 사용된 공유 토큰
+  timetableId: string;          // 대상 시간표 ID
+
+  // 기여자 정보
+  contributor: {
+    name?: string;               // 기여자 이름 (선택적)
+    email?: string;              // 기여자 이메일 (선택적)
+    ipAddress: string;           // IP 주소 (보안용)
+  };
+
+  // 기여한 일정들
+  contributions: {
+    dayOfWeek: string;           // "monday", "tuesday" 등
+    timeSlots: {
+      startTime: string;         // "10:00"
+      endTime: string;           // "11:30"
+      subject: string;           // "수학 과외"
+      type: 'class' | 'self_study';
+      color?: string;            // 표시 색상
+      note?: string;             // 추가 메모
+    }[];
+  }[];
+
+  // 처리 상태
+  status: 'pending' | 'approved' | 'rejected' | 'applied'; // 처리 상태
+  appliedAt?: FirestoreTimestamp; // 시간표에 적용된 시각
+
+  // 메타데이터
+  submittedAt: FirestoreTimestamp; // 제출 시각
+  processedAt?: FirestoreTimestamp; // 처리 시각
+  processedBy?: string;          // 처리자 (시간표 소유자)
+}
+```
+
+### 6\. 좌석 정보 컬렉션 (seats)
+
+`users/{userId}/seats`
+
+각 사용자의 개인 좌석 정보를 저장합니다.
+
+```typescript
+interface Seat {
+  seatNumber: string;              // 좌석 번호
+  location: {                      // 좌석 위치
+    x: number;
+    y: number;
+  };
+  status: 'available' | 'occupied' | 'maintenance'; // 좌석 상태
+  createdAt: FirestoreTimestamp;   // 생성일
+  updatedAt: FirestoreTimestamp;   // 수정일
+}
+```
+
+### 5\. 좌석 배정 컬렉션 (seat\_assignments)
+
+`users/{userId}/seat_assignments`
+
+각 사용자의 좌석 배정 기록을 저장합니다.
+
+```typescript
+type AssignmentStatus = 'active' | 'expired' | 'cancelled';
 
 interface SeatAssignment {
-  // 문서 ID: studentId (현재 배정된 좌석만 저장, 히스토리는 별도 관리)
-  seatId: string;                    // `seats` 컬렉션의 문서 ID
-  assignedAt: FirestoreTimestamp;    // 배정 시간
-  status: AssignmentStatus;          // 배정 상태
-  updatedAt: FirestoreTimestamp;
+  seatId: string;                  // 배정된 좌석 ID
+  assignedAt: FirestoreTimestamp;  // 배정 시각
+  expiresAt?: FirestoreTimestamp;  // 만료 시각
+  status: AssignmentStatus;        // 배정 상태
+  updatedAt: FirestoreTimestamp;   // 수정일
 }
 ```
 
-### 8\. 좌석 배치도 컬렉션 (seat\_layouts)
+### 6\. 좌석 배치도 컬렉션 (seat\_layouts)
 
-`academies/{academyId}/seat_layouts`
+`users/{userId}/seat_layouts`
 
-배치도별 메타데이터를 저장합니다. 실제 좌석 위치는 `seats` 컬렉션의 `position` 필드에서 관리됩니다.
+각 사용자의 개인 좌석 배치도를 저장합니다.
 
 ```typescript
-// 문서 ID: "main_hall" (예: 주 학습관)
 interface SeatLayout {
-  name: string;          // 배치도 이름 (예: "주 학습관")
-  description?: string;  // 배치도 설명
-  gridSize: {            // 배치도를 그릴 그리드의 크기
-    rows: number;        // 총 행 수
-    cols: number;        // 총 열 수
+  name: string;                    // 배치도 이름
+  layout: {
+    seats: {
+      id: string;
+      position: { x: number; y: number };
+      size: { width: number; height: number };
+    }[];
+    dimensions: {
+      width: number;
+      height: number;
+    };
   };
-  isActive: boolean;     // 활성화 여부
-  createdAt: FirestoreTimestamp;
-  updatedAt: FirestoreTimestamp;
+  createdAt: FirestoreTimestamp;   // 생성일
+  updatedAt: FirestoreTimestamp;   // 수정일
 }
 ```
 
-### 9\. 관리자 정보 컬렉션 (admins)
+### 7\. 학급 정보 컬렉션 (class\_sections)
 
-`academies/{academyId}/admins`
+`users/{userId}/class_sections`
+
+각 사용자의 개인 학급 정보를 저장합니다.
 
 ```typescript
-interface Admin {
-  authUid: string;                  // Firebase Auth UID
-  name: string;                     // 관리자 이름
-  role: 'admin' | 'super_admin';    // 관리자 역할
-  email: string;                    // 이메일
-  phone?: string;                   // 전화번호
-  isActive: boolean;                // 활성 상태
-  createdAt: FirestoreTimestamp;
-  updatedAt: FirestoreTimestamp;
+interface ClassSection {
+  name: string;                    // 학급명
+  description?: string;            // 학급 설명
+  schedule: {
+    startTime: string;             // 시작 시간
+    endTime: string;               // 종료 시간
+    daysOfWeek: number[];          // 요일 (0: 일요일, 1: 월요일, ...)
+  };
+  createdAt: FirestoreTimestamp;   // 생성일
+  updatedAt: FirestoreTimestamp;   // 수정일
 }
 ```
 
-### 10\. 관리자 정보 컬렉션 (admins)
+### 8\. 출석 요약 컬렉션 (attendance\_summaries)
 
-`academies/{academyId}/admins`
+`users/{userId}/attendance_summaries`
+
+각 사용자의 출석 통계를 저장합니다.
 
 ```typescript
-interface Admin {
-  authUid: string;                  // Firebase Auth UID
-  name: string;                     // 관리자 이름
-  role: 'admin' | 'super_admin';    // 관리자 역할
-  email: string;                    // 이메일
-  phone?: string;                   // 전화번호
-  isActive: boolean;                // 활성 상태
-  createdAt: FirestoreTimestamp;
-  updatedAt: FirestoreTimestamp;
+interface AttendanceSummary {
+  period: string;                  // 집계 기간 (YYYY-MM)
+  totalDays: number;               // 총 일수
+  presentDays: number;             // 출석 일수
+  absentDays: number;              // 결석 일수
+  lateDays: number;                // 지각 일수
+  earlyLeaveDays: number;          // 조퇴 일수
+  attendanceRate: number;          // 출석률 (%)
+  createdAt: FirestoreTimestamp;   // 생성일
+  updatedAt: FirestoreTimestamp;   // 수정일
+}
+```
+
+### 9\. 설정 컬렉션 (settings)
+
+`users/{userId}/settings`
+
+각 사용자의 개인 설정을 저장합니다.
+
+```typescript
+interface UserSettings {
+  notifications: {
+    attendance: boolean;           // 출석 알림
+    schedule: boolean;             // 스케줄 알림
+    announcements: boolean;        // 공지사항 알림
+  };
+  preferences: {
+    theme: 'light' | 'dark';       // 테마 설정
+    language: string;              // 언어 설정
+  };
+  createdAt: FirestoreTimestamp;   // 생성일
+  updatedAt: FirestoreTimestamp;   // 수정일
 }
 ```
 
 -----
 
-## 🏢 신규 지점(테넌트) 추가
+## 🔐 보안 규칙 (Firestore Rules) - 사용자 기반 격리
 
-(이전과 동일)
+사용자 기반 격리 아키텍처로 변경되면서 보안 규칙이 **매우 단순하고 강력**해졌습니다. 각 사용자는 자신의 UID와 일치하는 데이터에만 접근할 수 있습니다.
+
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 사용자 기반 데이터 격리 - 로그인한 계정별로 데이터 분리
+
+    // 사용자별 데이터 - uid 기반 격리
+    match /users/{userId} {
+      // 사용자는 본인 데이터만 접근 가능
+      allow read, write: if request.auth != null &&
+        request.auth.uid == userId;
+
+      // 출석 기록 - 해당 사용자만 접근 가능
+      match /attendance_records/{recordId} {
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
+      }
+
+      // 시간표 - 해당 사용자만 접근 가능
+      match /timetables/{timetableId} {
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
+      }
+
+      // 좌석 배정 - 해당 사용자만 접근 가능
+      match /seat_assignments/{assignmentId} {
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
+      }
+
+      // 좌석 정보 - 해당 사용자만 접근 가능
+      match /seats/{seatId} {
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
+      }
+
+      // 학급 정보 - 해당 사용자만 접근 가능
+      match /class_sections/{sectionId} {
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
+      }
+
+      // 출석 요약 - 해당 사용자만 접근 가능
+      match /attendance_summaries/{summaryId} {
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
+      }
+
+      // 좌석 배치도 - 해당 사용자만 접근 가능
+      match /seat_layouts/{layoutId} {
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
+      }
+
+      // 설정 - 해당 사용자만 접근 가능
+      match /settings/{settingId} {
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
+      }
+
+      // 시간표 공유 링크 관리 - 본인만 접근 가능
+      match /shared_schedules/{scheduleId} {
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
+      }
+
+      // 외부 일정 기여 수집 - 본인만 접근 가능
+      match /schedule_contributions/{contributionId} {
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
+      }
+
+      // 기타 하위 컬렉션 - 기본 권한 적용
+      match /{subCollection}/{docId} {
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
+      }
+    }
+
+    // 루트 레벨 컬렉션 접근 차단 (보안 강화)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+```
+
+### 동작 방식
+
+#### 기본 인증 및 데이터 격리
+
+1.  사용자가 Google 계정으로 로그인하면 Firebase Auth에서 고유한 UID를 발급받습니다.
+2.  모든 개인 데이터는 `/users/{uid}/` 경로 하위에 저장됩니다.
+3.  Firestore 보안 규칙은 `request.auth.uid`와 접근하려는 경로의 `{userId}`가 일치하는지만 확인합니다.
+4.  일치하면 해당 사용자의 모든 데이터에 접근이 허용되고, 일치하지 않으면 완전히 차단됩니다.
+
+#### 고급 시간표 기능 동작
+
+5.  **2레이어 시간표**:
+      * 1차 레이어에서 등원/하원 시간과 기본 틀을 설정
+      * 2차 레이어에서 구체적인 일정을 시간대별로 관리
+6.  **자동 자습시간 채우기**:
+      * 등원 시간부터 하원 시간까지 설정된 시간 단위로 분할
+      * 기존 일정이 없는 빈 시간대를 자동으로 "자습" 항목으로 채움
+      * `isAutoGenerated: true` 플래그로 수동/자동 생성 구분
+
+#### 시간표 공유 시스템 동작
+
+7.  **공유 링크 생성**: 사용자가 시간표 공유를 활성화하면 고유 토큰 생성
+8.  **외부 접근**: 공유 링크를 받은 사람이 별도 인증 없이 일정 입력 가능
+9.  **기여 데이터 수집**: 외부 입력 데이터는 `schedule_contributions`에 임시 저장
+10. **승인 프로세스**: 시간표 소유자가 기여 데이터를 검토 후 승인/거부
+11. **자동 적용**: 승인된 일정은 원본 시간표에 자동 반영, 나머지 시간은 자습으로 채움
+
+#### 보안 및 접근 제어
+
+12. **완전한 격리**: 각 사용자는 자신의 데이터만 접근 가능
+13. **공유 예외 처리**: 시간표 공유는 Cloud Functions를 통해 제한적으로 처리
+14. **커스텀 클레임 불필요**: Google 인증만으로 모든 권한 관리 완료
 
 -----
 
-## 🔐 보안 규칙 (Firestore Rules)
+## 🚀 최종 컬렉션 구조 (11개) - 사용자 기반 격리 + 고급 시간표
 
-(이전과 동일 - `seat_layouts` 컬렉션은 일반 하위 컬렉션 규칙에 따라 관리자만 접근 가능)
+각 사용자별로 독립적인 하위 컬렉션을 가지는 구조입니다:
 
------
+1.  **users** - 사용자 기본 정보 (루트 컬렉션, Google 계정)
+2.  **attendance\_records** - 개인 출석 기록 (`users/{userId}/attendance_records`)
+3.  **timetables** - 고급 시간표 2레이어 구조 (`users/{userId}/timetables`)
+4.  **shared\_schedules** - 시간표 공유 링크 관리 (`users/{userId}/shared_schedules`)
+5.  **schedule\_contributions** - 외부 일정 기여 수집 (`users/{userId}/schedule_contributions`)
+6.  **seats** - 개인 좌석 정보 (`users/{userId}/seats`)
+7.  **seat\_assignments** - 개인 좌석 배정 (`users/{userId}/seat_assignments`)
+8.  **seat\_layouts** - 개인 좌석 배치도 (`users/{userId}/seat_layouts`)
+9.  **class\_sections** - 개인 학급 정보 (`users/{userId}/class_sections`)
+10. **attendance\_summaries** - 개인 출석 요약 (`users/{userId}/attendance_summaries`)
+11. **settings** - 개인 설정 (`users/{userId}/settings`)
 
-## 📊 인덱스 설계
+### 아키텍처 개선 요약
 
-(이전과 동일)
+#### 🔐 보안 & 격리
 
------
+  * **완전한 데이터 격리**: 각 사용자는 자신의 데이터에만 접근 가능하며, 다른 사용자의 데이터는 완전히 격리됩니다.
+  * **단순한 보안 규칙**: Firebase Auth UID 비교만으로 모든 보안이 해결됩니다.
+  * **커스텀 클레임 불필요**: 추가적인 권한 관리나 클레임 설정이 전혀 필요하지 않습니다.
 
-## 📝 추가 고려사항
+#### 🚀 확장성 & 성능
 
-### 데이터 관계 및 역할 분리
+  * **확장성**: 사용자가 증가해도 각자 독립적인 데이터 공간을 가지므로 확장성이 뛰어납니다.
+  * **개발 단순화**: 복잡한 권한 분기나 다중 테넌트 로직이 불필요하여 개발이 매우 단순해집니다.
+  * **데이터 무결성**: 사용자별 완전 격리로 데이터 오염이나 혼재 가능성이 전혀 없습니다.
 
-  - **`seat_layouts`**: "배치도 메타데이터" (그리드 크기, 이름 등)
-  - **`seats`**: "좌석 상태 및 위치" (사용 가능성, 좌표)
-  - **`seat_assignments`**: "현재 좌석 배정" (누가 어느 좌석에)
-  - **`attendance_records`**: "출석 기록" (언제, 어느 좌석에서)
+#### 📅 고급 시간표 기능
 
-### 주요 개선 사항
+  * **2레이어 시간표**: 등원/하원 기본 틀과 세부 일정을 분리하여 유연한 관리
+  * **자동 자습시간 채우기**: 빈 시간대를 자동으로 "자습" 항목으로 채우는 지능형 기능
+  * **링크 공유 시스템**: 외부 사용자가 시간표에 일정을 추가할 수 있는 협업 기능
+  * **기여 데이터 관리**: 외부에서 입력된 일정을 승인/거부할 수 있는 관리 시스템
 
-1. **좌석-출결 연동**: `attendance_records`에 `seatId` 필드 추가로 좌석 배치표를 통한 출결 관리 지원
-2. **데이터 구조 단순화**: 좌석 위치 정보를 `seats` 컬렉션에 통합하여 중복 제거
-3. **배정 시스템 개선**: 문서 ID를 `studentId`로 단순화하여 현재 배정만 관리
-4. **불필요한 컬렉션 제거**: `academy_settings`, `attendance_summaries` 제거로 복잡성 감소
+#### 🔗 인증 & 소셜 로그인
 
-### 🚀 최종 컬렉션 구조 (9개) - 개선됨
-
-1.  **students** - 학생 정보
-2.  **parents** - 학부모 정보
-3.  **attendance\_records** - 출석 기록 (좌석 연동 기능 추가)
-4.  **class\_sections** - 수업 섹션
-5.  **student\_timetables** - 학생 개인 시간표
-6.  **seats** - 좌석 정보 (위치 정보 통합)
-7.  **seat\_assignments** - 좌석 배정 (단순화)
-8.  **seat\_layouts** - 좌석 배치도 (메타데이터만)
-9.  **admins** - 관리자 정보 (권한 시스템 단순화)
-
------
-
-**참고**: 이 설계는 실무 피드백과 요구사항 분석을 반영한 최적화된 버전이며, 실제 구현 과정에서 요구사항에 따라 추가 수정될 수 있습니다.
-
-### 개선 요약
-- 좌석-출결 연동 기능 추가
-- 데이터 구조 단순화 및 중복 제거
-- 불필요한 컬렉션 2개 제거 (11개 → 9개)
-- 성능 및 유지보수성 향상
+  * **Google 계정 연동**: Firebase Auth Google Provider를 통한 간편한 소셜 로그인
+  * **프로필 정보 자동 동기화**: Google 계정의 이름, 이메일, 프로필 사진 자동 연동
+  * **보안 강화**: Google의 2단계 인증 등 기존 보안 체계 활용

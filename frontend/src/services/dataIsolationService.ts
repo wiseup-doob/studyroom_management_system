@@ -24,23 +24,20 @@ class DataIsolationService {
   // 데이터 격리 테스트 실행
   async runIsolationTests(): Promise<DataIsolationReport> {
     const results: IsolationTestResult[] = [];
-    
+
     try {
-      // 테스트 1: 학원 간 데이터 격리 검증
-      results.push(await this.testAcademyDataIsolation());
-      
-      // 테스트 2: 역할별 접근 권한 검증
-      results.push(await this.testRoleBasedAccess());
-      
-      // 테스트 3: 사용자별 데이터 접근 검증
+      // 테스트 1: 사용자 간 데이터 격리 검증
+      results.push(await this.testUserDataIsolation());
+
+      // 테스트 2: 사용자별 데이터 접근 검증
       results.push(await this.testUserDataAccess());
-      
-      // 테스트 4: 관리자 권한 검증
-      results.push(await this.testAdminPermissions());
-      
-      // 테스트 5: 보안 규칙 준수 검증
+
+      // 테스트 3: 데이터 무결성 검증
+      results.push(await this.validateDataIntegrity());
+
+      // 테스트 4: 보안 규칙 준수 검증
       results.push(await this.testSecurityRuleCompliance());
-      
+
     } catch (error) {
       results.push({
         testName: 'Isolation Test Suite',
@@ -63,107 +60,56 @@ class DataIsolationService {
     };
   }
   
-  // 테스트 1: 학원 간 데이터 격리 검증
-  private async testAcademyDataIsolation(): Promise<IsolationTestResult> {
+  // 테스트 1: 사용자 간 데이터 격리 검증
+  private async testUserDataIsolation(): Promise<IsolationTestResult> {
     try {
       const currentContext = securityService.getCurrentContext();
       if (!currentContext) {
         return {
-          testName: 'Academy Data Isolation',
+          testName: 'User Data Isolation',
           passed: false,
           message: '보안 컨텍스트가 설정되지 않았습니다.'
         };
       }
-      
-      // 현재 학원의 데이터만 접근 가능한지 확인
-      const studentsRef = collection(db, 'academies', currentContext.academyId, 'students');
-      const querySnapshot = await getDocs(studentsRef);
-      
-      // 모든 학생 데이터가 현재 학원에 속하는지 확인
-      const invalidStudents = querySnapshot.docs.filter(doc => {
+
+      // 현재 사용자의 데이터만 접근 가능한지 확인
+      const userDataRef = collection(db, 'users', currentContext.userId, 'attendance_records');
+      const querySnapshot = await getDocs(userDataRef);
+
+      // 모든 출석 기록이 현재 사용자에 속하는지 확인
+      const invalidRecords = querySnapshot.docs.filter(doc => {
         const data = doc.data();
-        return data.academyId && data.academyId !== currentContext.academyId;
+        return data.userId && data.userId !== currentContext.userId;
       });
-      
-      if (invalidStudents.length > 0) {
+
+      if (invalidRecords.length > 0) {
         return {
-          testName: 'Academy Data Isolation',
+          testName: 'User Data Isolation',
           passed: false,
-          message: `${invalidStudents.length}개의 다른 학원 데이터가 발견되었습니다.`,
-          details: invalidStudents.map(doc => ({ id: doc.id, academyId: doc.data().academyId }))
+          message: `${invalidRecords.length}개의 다른 사용자 데이터가 발견되었습니다.`,
+          details: invalidRecords.map(doc => ({ id: doc.id, userId: doc.data().userId }))
         };
       }
-      
+
       return {
-        testName: 'Academy Data Isolation',
+        testName: 'User Data Isolation',
         passed: true,
-        message: '학원 간 데이터 격리가 올바르게 작동합니다.',
-        details: { totalStudents: querySnapshot.size }
+        message: '사용자 간 데이터 격리가 올바르게 작동합니다.',
+        details: { totalRecords: querySnapshot.size }
       };
-      
+
     } catch (error) {
       return {
-        testName: 'Academy Data Isolation',
+        testName: 'User Data Isolation',
         passed: false,
-        message: '학원 데이터 격리 테스트 실패',
+        message: '사용자 데이터 격리 테스트 실패',
         details: error
       };
     }
   }
   
-  // 테스트 2: 역할별 접근 권한 검증
-  private async testRoleBasedAccess(): Promise<IsolationTestResult> {
-    try {
-      const currentContext = securityService.getCurrentContext();
-      if (!currentContext) {
-        return {
-          testName: 'Role-Based Access',
-          passed: false,
-          message: '보안 컨텍스트가 설정되지 않았습니다.'
-        };
-      }
-      
-      const accessControl = securityService.checkDataAccess('students', 'read');
-      
-      // 역할에 따른 접근 권한 확인
-      let expectedAccess = false;
-      switch (currentContext.role) {
-        case 'admin':
-        case 'super_admin':
-          expectedAccess = true;
-          break;
-        case 'student':
-          expectedAccess = false; // 학생은 전체 학생 목록에 접근할 수 없음
-          break;
-      }
-      
-      if (accessControl.canRead !== expectedAccess) {
-        return {
-          testName: 'Role-Based Access',
-          passed: false,
-          message: `역할별 접근 권한이 올바르지 않습니다. 예상: ${expectedAccess}, 실제: ${accessControl.canRead}`,
-          details: { role: currentContext.role, accessControl }
-        };
-      }
-      
-      return {
-        testName: 'Role-Based Access',
-        passed: true,
-        message: '역할별 접근 권한이 올바르게 설정되었습니다.',
-        details: { role: currentContext.role, accessControl }
-      };
-      
-    } catch (error) {
-      return {
-        testName: 'Role-Based Access',
-        passed: false,
-        message: '역할별 접근 권한 테스트 실패',
-        details: error
-      };
-    }
-  }
   
-  // 테스트 3: 사용자별 데이터 접근 검증
+  // 테스트 2: 사용자별 데이터 접근 검증
   private async testUserDataAccess(): Promise<IsolationTestResult> {
     try {
       const currentContext = securityService.getCurrentContext();
@@ -174,28 +120,38 @@ class DataIsolationService {
           message: '보안 컨텍스트가 설정되지 않았습니다.'
         };
       }
-      
-      // 학생인 경우 본인 데이터만 접근 가능한지 확인
-      if (currentContext.role === 'student') {
-        const studentAccess = securityService.checkStudentDataAccess('current_user_id', 'current_user_id');
-        
-        if (!studentAccess.canRead) {
-          return {
-            testName: 'User Data Access',
-            passed: false,
-            message: '학생이 본인 데이터에 접근할 수 없습니다.',
-            details: { studentAccess }
-          };
-        }
+
+      // 사용자가 본인 데이터만 접근 가능한지 확인
+      const userAccess = securityService.checkUserDataAccess(currentContext.userId, currentContext.userId);
+
+      if (!userAccess.canRead) {
+        return {
+          testName: 'User Data Access',
+          passed: false,
+          message: '사용자가 본인 데이터에 접근할 수 없습니다.',
+          details: { userAccess }
+        };
       }
-      
+
+      // 다른 사용자 데이터 접근 차단 확인
+      const otherUserAccess = securityService.checkUserDataAccess('other_user_id', currentContext.userId);
+
+      if (otherUserAccess.canRead) {
+        return {
+          testName: 'User Data Access',
+          passed: false,
+          message: '사용자가 다른 사용자의 데이터에 접근할 수 있습니다.',
+          details: { otherUserAccess }
+        };
+      }
+
       return {
         testName: 'User Data Access',
         passed: true,
         message: '사용자별 데이터 접근 권한이 올바르게 설정되었습니다.',
-        details: { role: currentContext.role }
+        details: { userId: currentContext.userId }
       };
-      
+
     } catch (error) {
       return {
         testName: 'User Data Access',
@@ -206,50 +162,8 @@ class DataIsolationService {
     }
   }
   
-  // 테스트 4: 관리자 권한 검증
-  private async testAdminPermissions(): Promise<IsolationTestResult> {
-    try {
-      const currentContext = securityService.getCurrentContext();
-      if (!currentContext) {
-        return {
-          testName: 'Admin Permissions',
-          passed: false,
-          message: '보안 컨텍스트가 설정되지 않았습니다.'
-        };
-      }
-      
-      if (currentContext.role === 'admin' || currentContext.role === 'super_admin') {
-        // 관리자 권한 검증
-        const permissionCheck = securityService.validatePermission(['manage_students']);
-        
-        if (!permissionCheck.allowed) {
-          return {
-            testName: 'Admin Permissions',
-            passed: false,
-            message: '관리자 권한이 올바르게 설정되지 않았습니다.',
-            details: { permissionCheck }
-          };
-        }
-      }
-      
-      return {
-        testName: 'Admin Permissions',
-        passed: true,
-        message: '관리자 권한이 올바르게 설정되었습니다.',
-        details: { role: currentContext.role }
-      };
-      
-    } catch (error) {
-      return {
-        testName: 'Admin Permissions',
-        passed: false,
-        message: '관리자 권한 테스트 실패',
-        details: error
-      };
-    }
-  }
   
-  // 테스트 5: 보안 규칙 준수 검증
+  // 테스트 3: 보안 규칙 준수 검증
   private async testSecurityRuleCompliance(): Promise<IsolationTestResult> {
     try {
       const currentContext = securityService.getCurrentContext();
@@ -260,26 +174,27 @@ class DataIsolationService {
           message: '보안 컨텍스트가 설정되지 않았습니다.'
         };
       }
-      
-      // 의심스러운 활동 감지 테스트
-      const suspiciousActivity = securityService.detectSuspiciousActivity('test_access', 'admins');
-      
-      if (currentContext.role === 'student' && !suspiciousActivity) {
+
+      // 의심스러운 활동 감지 테스트 (다른 사용자 데이터 접근 시도)
+      const suspiciousActivity = securityService.detectSuspiciousActivity('cross_user_access', 'users');
+
+      // cross_user가 포함된 액션이므로 의심스러운 활동으로 감지되어야 함
+      if (!suspiciousActivity) {
         return {
           testName: 'Security Rule Compliance',
           passed: false,
-          message: '학생의 관리자 리소스 접근 시도가 감지되지 않았습니다.',
-          details: { role: currentContext.role, suspiciousActivity }
+          message: '다른 사용자 데이터 접근 시도가 감지되지 않았습니다.',
+          details: { userId: currentContext.userId, suspiciousActivity }
         };
       }
-      
+
       return {
         testName: 'Security Rule Compliance',
         passed: true,
         message: '보안 규칙이 올바르게 준수되고 있습니다.',
-        details: { role: currentContext.role, suspiciousActivity }
+        details: { userId: currentContext.userId, suspiciousActivity }
       };
-      
+
     } catch (error) {
       return {
         testName: 'Security Rule Compliance',
@@ -301,32 +216,37 @@ class DataIsolationService {
           message: '보안 컨텍스트가 설정되지 않았습니다.'
         };
       }
-      
-      // 학생 데이터 무결성 검증
-      const studentsRef = collection(db, 'academies', currentContext.academyId, 'students');
-      const querySnapshot = await getDocs(studentsRef);
-      
+
+      // 사용자 데이터 무결성 검증
+      const userDocRef = doc(db, 'users', currentContext.userId);
+      const userDoc = await getDoc(userDocRef);
+
+      if (!userDoc.exists()) {
+        return {
+          testName: 'Data Integrity',
+          passed: false,
+          message: '사용자 데이터가 존재하지 않습니다.'
+        };
+      }
+
+      const userData = userDoc.data();
       const integrityIssues: string[] = [];
-      
-      querySnapshot.docs.forEach(doc => {
-        const data = doc.data();
-        
-        // 필수 필드 검증
-        if (!data.name || !data.authUid || !data.status) {
-          integrityIssues.push(`학생 ${doc.id}: 필수 필드 누락`);
-        }
-        
-        // 상태 값 검증
-        if (data.status && !['active', 'inactive'].includes(data.status)) {
-          integrityIssues.push(`학생 ${doc.id}: 잘못된 상태 값`);
-        }
-        
-        // 날짜 형식 검증
-        if (data.createdAt && !(data.createdAt instanceof Date)) {
-          integrityIssues.push(`학생 ${doc.id}: 잘못된 생성일 형식`);
-        }
-      });
-      
+
+      // 필수 필드 검증
+      if (!userData.name || !userData.email) {
+        integrityIssues.push(`사용자 ${currentContext.userId}: 필수 필드 누락`);
+      }
+
+      // 상태 값 검증
+      if (userData.isActive !== true && userData.isActive !== false) {
+        integrityIssues.push(`사용자 ${currentContext.userId}: 잘못된 활성 상태 값`);
+      }
+
+      // 날짜 형식 검증
+      if (userData.createdAt && !(userData.createdAt instanceof Date)) {
+        integrityIssues.push(`사용자 ${currentContext.userId}: 잘못된 생성일 형식`);
+      }
+
       if (integrityIssues.length > 0) {
         return {
           testName: 'Data Integrity',
@@ -335,14 +255,14 @@ class DataIsolationService {
           details: integrityIssues
         };
       }
-      
+
       return {
         testName: 'Data Integrity',
         passed: true,
         message: '데이터 무결성이 올바르게 유지되고 있습니다.',
-        details: { totalStudents: querySnapshot.size }
+        details: { userId: currentContext.userId }
       };
-      
+
     } catch (error) {
       return {
         testName: 'Data Integrity',

@@ -4,7 +4,7 @@ import './Home.css';
 const Home: React.FC = () => {
   return (
     <div className="home-container">
-      <h1>Home Page</h1>
+      {/* 깔끔한 흰색 배경만 유지 */}
     </div>
   );
 };

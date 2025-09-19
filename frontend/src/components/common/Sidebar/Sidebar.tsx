@@ -15,16 +15,16 @@ const SIDEBAR_MENU_ITEMS = [
     icon: '🏠'
   },
   {
-    id: 'attendance',
-    label: '출결 관리',
-    path: '/attendance',
-    icon: '📋'
+    id: 'student',
+    label: '학생 관리',
+    path: '/student',
+    icon: '👥'
   },
   {
-    id: 'students',
-    label: '원생 관리',
-    path: '/students',
-    icon: '👥'
+    id: 'timetable',
+    label: '시간표',
+    path: '/timetable',
+    icon: '📅'
   }
 ];
 

@@ -1,7 +1,8 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { auth } from '../services/firebase';
-import { onIdTokenChanged, User } from 'firebase/auth';
+import { onAuthStateChanged, User } from 'firebase/auth';
 import { authService } from '../services/authService';
+import { apiService } from '../services/apiService';
 import { UserProfile, AuthContextType } from '../types/auth';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,50 +22,43 @@ interface AuthProviderProps {
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [academyId, setAcademyId] = useState<string | null>(null);
-  const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
-    // onAuthStateChanged 대신 onIdTokenChanged 사용
-    const unsubscribe = onIdTokenChanged(auth, async (user: User | null) => {
+    // 사용자 기반 격리 시스템에서는 onAuthStateChanged 사용
+    const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
       if (user) {
         try {
-          const idTokenResult = await user.getIdTokenResult();
-          const claims = idTokenResult.claims as any;
+          console.log('사용자 인증 상태 변경:', {
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName
+          });
           
-          // 클레임과 Firestore 정보를 조합하여 UserProfile 생성
-          const academyId = claims.academyId as string;
-          const role = claims.role as string;
+          // 사용자 기반 격리: uid를 사용하여 직접 Firestore에서 사용자 정보 조회
+          const userProfile = await authService.getUserProfile(user.uid);
+          setUserProfile(userProfile);
           
-          if (academyId && role) {
-            const userProfile = await authService.getUserProfile(academyId, role, user.uid);
-            setUserProfile(userProfile);
-            setAcademyId(academyId);
-            setRole(role);
-          } else {
-            // 클레임이 없는 경우 (아직 권한이 설정되지 않은 사용자)
-            // Firebase Authentication은 성공했지만 권한이 설정되지 않은 상태
-            setUserProfile({
-              uid: user.uid,
-              email: user.email || '',
-              academyId: '',
-              role: 'pending' as any,
-              name: user.displayName || '',
-              isActive: true
-            });
-            setAcademyId(null);
-            setRole(null);
-          }
+          // API 서비스에 사용자 ID 설정
+          apiService.setContext(user.uid, userProfile.isActive);
+          
+          console.log('사용자 로그인 성공:', {
+            uid: user.uid,
+            name: userProfile.name,
+            email: userProfile.email,
+            isActive: userProfile.isActive
+          });
         } catch (error) {
           console.error('사용자 프로필 로드 실패:', error);
+          console.error('오류 상세:', {
+            message: error instanceof Error ? error.message : '알 수 없는 오류',
+            stack: error instanceof Error ? error.stack : undefined
+          });
           setUserProfile(null);
-          setAcademyId(null);
-          setRole(null);
         }
       } else {
         setUserProfile(null);
-        setAcademyId(null);
-        setRole(null);
+        // 로그아웃 시 API 서비스 컨텍스트 초기화
+        apiService.setContext('', false);
       }
       setLoading(false);
     });
@@ -72,12 +66,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return () => unsubscribe();
   }, []);
 
-  const login = async (email: string, password: string): Promise<void> => {
+  const login = async (): Promise<void> => {
     try {
-      const userProfile = await authService.login(email, password);
-      setUserProfile(userProfile);
-      setAcademyId(userProfile.academyId);
-      setRole(userProfile.role);
+      // Google 로그인은 authService.login()에서 처리
+      // 성공 시 onAuthStateChanged가 자동으로 호출됨
+      await authService.login();
     } catch (error) {
       throw error;
     }
@@ -87,8 +80,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       await authService.logout();
       setUserProfile(null);
-      setAcademyId(null);
-      setRole(null);
     } catch (error) {
       throw error;
     }
@@ -106,8 +97,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const value: AuthContextType = {
     userProfile,
     loading,
-    academyId,
-    role,
     login,
     logout,
     getCurrentUser
