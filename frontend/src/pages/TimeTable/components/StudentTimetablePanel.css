@@ -1,0 +1,440 @@
+/* StudentTimetablePanel.css - 학생 시간표 패널 스타일 (검은색/하얀색 테마) */
+
+/* ==================== 메인 패널 ==================== */
+.stp-main-panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff;
+}
+
+/* ==================== 헤더 ==================== */
+.stp-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #333333;
+  background-color: #f5f5f5;
+}
+
+.stp-student-info h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #000000;
+}
+
+.stp-student-details {
+  margin: 4px 0 0 0;
+  font-size: 14px;
+  color: #666666;
+}
+
+.stp-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.stp-btn-create {
+  background-color: #000000;
+  color: #ffffff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.stp-btn-create:hover {
+  background-color: #333333;
+}
+
+.stp-btn-share-link {
+  background: none;
+  border: 1px solid #3b82f6;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: background-color 0.2s;
+  color: #3b82f6;
+  margin-right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+
+.stp-btn-share-link:hover {
+  background-color: #eff6ff;
+}
+
+.stp-btn-edit-link-management {
+  background: none;
+  border: 1px solid #f59e0b;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #f59e0b;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+
+.stp-btn-edit-link-management:hover {
+  background-color: #fef3c7;
+}
+
+.stp-btn-edit-timetable {
+  background: none;
+  border: 1px solid #333333;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: background-color 0.2s;
+  color: #000000;
+  margin-right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stp-btn-edit-timetable:hover {
+  background-color: #e0e0e0;
+}
+
+.stp-btn-refresh {
+  background: none;
+  border: 1px solid #333333;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 16px;
+  transition: background-color 0.2s;
+  color: #000000;
+}
+
+.stp-btn-refresh:hover {
+  background-color: #e0e0e0;
+}
+
+/* ==================== 시간표 컨테이너 ==================== */
+.stp-timetable-container {
+  flex: 1;
+  padding: 16px;
+  overflow: auto;
+}
+
+.stp-timetable-grid {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #ffffff;
+  border: 1px solid #333333;
+  table-layout: fixed;
+}
+
+.stp-time-header {
+  background-color: #f5f5f5;
+  border: 1px solid #333333;
+  padding: 1px;
+  text-align: center;
+  font-weight: 600;
+  color: #000000;
+  font-size: 9px;
+  width: 80px;
+  height: 8px;
+  line-height: 1.0;
+}
+
+.stp-day-header {
+  background-color: #f5f5f5;
+  border: 1px solid #333333;
+  padding: 2px;
+  text-align: center;
+  font-weight: 600;
+  color: #000000;
+  font-size: 12px;
+  width: 90px;
+  height: 20px;
+  line-height: 1.1;
+}
+
+.stp-time-slot {
+  border: 1px solid #333333;
+  padding: 1px;
+  text-align: center;
+  vertical-align: top;
+  height: 28px;
+  width: 90px;
+  background-color: #ffffff;
+  position: relative;
+  transition: background-color 0.2s;
+  overflow: hidden;
+  font-size: 9px;
+  line-height: 1.0;
+}
+
+
+.stp-time-slot:hover {
+  background-color: #f9f9f9;
+}
+
+.stp-slot-with-content {
+  border: 2px solid;
+  position: relative;
+}
+
+.stp-slot-with-content:hover {
+  opacity: 0.8;
+  filter: brightness(1.1);
+}
+
+.stp-slot-content {
+  font-size: 8px;
+  color: #000000;
+  line-height: 1.0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.stp-slot-subject {
+  font-weight: 500;
+  margin-bottom: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  font-size: 8px;
+}
+
+.stp-slot-time {
+  color: #666666;
+  font-size: 7px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.stp-slot-type {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.stp-slot-type.class {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.stp-slot-type.self-study {
+  background-color: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.stp-slot-type.external-class {
+  background-color: #e8f5e8;
+  color: #2e7d32;
+}
+
+/* ==================== 빈 상태 ==================== */
+.stp-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  padding: 20px;
+  text-align: center;
+  color: #666666;
+}
+
+.stp-empty-state h3 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.stp-empty-state p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+/* ==================== 로딩 상태 ==================== */
+.stp-loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #666666;
+}
+
+.stp-loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e0e0e0;
+  border-top: 2px solid #333333;
+  border-radius: 50%;
+  animation: stp-spin 1s linear infinite;
+  margin-right: 8px;
+}
+
+@keyframes stp-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+
+/* ==================== 반응형 디자인 ==================== */
+@media (max-width: 768px) {
+  .stp-panel-header {
+    padding: 12px;
+  }
+
+  .stp-student-info h2 {
+    font-size: 16px;
+  }
+
+  .stp-timetable-container {
+    padding: 12px;
+  }
+
+  .stp-time-header {
+    font-size: 10px;
+    padding: 6px;
+  }
+
+  .stp-day-header {
+    font-size: 12px;
+    padding: 8px 6px;
+  }
+
+  .stp-time-slot {
+    padding: 6px;
+    min-height: 35px;
+  }
+
+  .stp-slot-content {
+    font-size: 10px;
+  }
+}
+
+/* ==================== 접근성 ==================== */
+@media (prefers-reduced-motion: reduce) {
+  .stp-btn-create,
+  .stp-btn-refresh {
+    transition: none;
+  }
+
+  .stp-loading-spinner {
+    animation: none;
+  }
+}
+
+/* ==================== 다크 모드 ==================== */
+@media (prefers-color-scheme: dark) {
+  .stp-main-panel {
+    background-color: #111111;
+  }
+
+  .stp-panel-header {
+    background-color: #222222;
+    border-bottom-color: #444444;
+  }
+
+  .stp-student-info h2 {
+    color: #ffffff;
+  }
+
+  .stp-student-details {
+    color: #cccccc;
+  }
+
+  .stp-btn-edit-link-management {
+    border-color: #f59e0b;
+    color: #f59e0b;
+  }
+
+  .stp-btn-edit-link-management:hover {
+    background-color: #451a03;
+  }
+
+  .stp-btn-refresh {
+    border-color: #666666;
+    color: #ffffff;
+  }
+
+  .stp-btn-refresh:hover {
+    background-color: #333333;
+  }
+
+  .stp-timetable-container {
+    background-color: #111111;
+  }
+
+  .stp-timetable-grid {
+    background-color: #111111;
+    border-color: #444444;
+  }
+
+  .stp-time-header,
+  .stp-day-header {
+    background-color: #222222;
+    border-color: #444444;
+    color: #ffffff;
+  }
+
+  .stp-time-slot {
+    background-color: #111111;
+    border-color: #444444;
+  }
+
+  .stp-time-slot:hover {
+    background-color: #222222;
+  }
+
+  .stp-slot-content {
+    color: #ffffff;
+  }
+
+  .stp-slot-time {
+    color: #cccccc;
+  }
+
+  .stp-slot-type.class {
+    background-color: #1e3a8a;
+    color: #93c5fd;
+  }
+
+  .stp-slot-type.self-study {
+    background-color: #581c87;
+    color: #c084fc;
+  }
+
+  .stp-slot-type.external-class {
+    background-color: #1b5e20;
+    color: #81c784;
+  }
+
+  .stp-empty-state {
+    color: #999999;
+  }
+
+  .stp-loading-state {
+    color: #999999;
+  }
+}

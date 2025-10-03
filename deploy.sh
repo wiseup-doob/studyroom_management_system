@@ -156,6 +156,10 @@ deploy_full() {
     firebase use $PROJECT_ID
     
     echo -e "${YELLOW}전체 배포를 시작합니다...${NC}"
+    
+    # Firebase Functions에 환경 변수 설정 (v2 방식)
+    echo -e "${BLUE}Firebase Functions 환경 변수는 .env 파일에서 설정됩니다.${NC}"
+    
     firebase deploy --only hosting,functions,firestore
     
     if [ $? -eq 0 ]; then
@@ -188,6 +192,10 @@ deploy_backend() {
     firebase use $PROJECT_ID
     
     echo -e "${YELLOW}백엔드 배포를 시작합니다...${NC}"
+    
+    # Firebase Functions에 환경 변수 설정 (v2 방식)
+    echo -e "${BLUE}Firebase Functions 환경 변수는 .env 파일에서 설정됩니다.${NC}"
+    
     firebase deploy --only functions,firestore
     
     if [ $? -eq 0 ]; then

@@ -1,0 +1,415 @@
+/**
+ * TimeSlotEditModal.css - 시간표 편집 모달 스타일 (2단 레이아웃)
+ * 
+ * 왼쪽: 기존 수업 목록
+ * 오른쪽: 새 수업 추가 폼
+ */
+
+/* ==================== 모달 오버레이 ==================== */
+.tsem-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.tsem-modal {
+  background: #ffffff;
+  border: 2px solid #333333;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 1000px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+/* ==================== 모달 헤더 ==================== */
+.tsem-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 2px solid #e0e0e0;
+  background: #f8f9fa;
+}
+
+.tsem-modal-header h2 {
+  margin: 0;
+  color: #000000;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.tsem-close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666666;
+  padding: 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+}
+
+.tsem-close-btn:hover {
+  background: #e0e0e0;
+  color: #333333;
+}
+
+/* ==================== 모달 콘텐츠 ==================== */
+.tsem-modal-content {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ==================== 왼쪽 패널 (기존 수업 목록) ==================== */
+.tsem-left-panel {
+  flex: 1;
+  padding: 24px;
+  border-right: 2px solid #e0e0e0;
+  background: #fafafa;
+  overflow-y: auto;
+}
+
+.tsem-left-panel h3 {
+  margin: 0 0 20px 0;
+  color: #000000;
+  font-size: 18px;
+  font-weight: 600;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.tsem-class-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tsem-empty-list {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666666;
+}
+
+.tsem-empty-list p {
+  margin: 0;
+  font-size: 16px;
+}
+
+/* ==================== 수업 아이템 ==================== */
+.tsem-class-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.tsem-class-item:hover {
+  border-color: #333333;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tsem-class-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.tsem-class-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.tsem-class-subject {
+  font-size: 16px;
+  font-weight: 600;
+  color: #000000;
+}
+
+.tsem-class-type {
+  background: #e0e0e0;
+  color: #333333;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.tsem-class-details {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 4px;
+  font-size: 14px;
+  color: #666666;
+}
+
+.tsem-class-day {
+  font-weight: 500;
+}
+
+.tsem-class-time {
+  font-family: 'Courier New', monospace;
+}
+
+.tsem-class-teacher,
+.tsem-class-location {
+  font-size: 13px;
+  color: #888888;
+  margin-top: 2px;
+}
+
+.tsem-delete-btn {
+  background: none;
+  border: 1px solid #ff4444;
+  color: #ff4444;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 40px;
+}
+
+.tsem-delete-btn:hover {
+  background: #ff4444;
+  color: #ffffff;
+}
+
+/* ==================== 오른쪽 패널 (새 수업 추가) ==================== */
+.tsem-right-panel {
+  flex: 1;
+  padding: 24px;
+  background: #ffffff;
+  overflow-y: auto;
+}
+
+.tsem-right-panel h3 {
+  margin: 0 0 20px 0;
+  color: #000000;
+  font-size: 18px;
+  font-weight: 600;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.tsem-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ==================== 폼 그룹 ==================== */
+.tsem-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tsem-form-group label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333333;
+}
+
+.tsem-form-group input,
+.tsem-form-group select,
+.tsem-form-group textarea {
+  padding: 10px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+  background: #ffffff;
+  color: #000000;
+}
+
+.tsem-form-group input:focus,
+.tsem-form-group select:focus,
+.tsem-form-group textarea:focus {
+  outline: none;
+  border-color: #333333;
+  box-shadow: 0 0 0 2px rgba(51, 51, 51, 0.1);
+}
+
+.tsem-form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* ==================== 폼 행 ==================== */
+.tsem-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* ==================== 색상 입력 ==================== */
+.tsem-color-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.tsem-color-input {
+  width: 50px;
+  height: 40px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 0;
+  background: none;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.tsem-color-input:hover {
+  border-color: #333;
+}
+
+.tsem-color-input:focus {
+  border-color: #2196F3;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+}
+
+.tsem-color-preview {
+  width: 40px;
+  height: 40px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: white;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  font-weight: bold;
+}
+
+/* ==================== 에러 메시지 ==================== */
+.tsem-error-message {
+  background: #ffebee;
+  color: #c62828;
+  padding: 12px 16px;
+  border: 1px solid #ffcdd2;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* ==================== 폼 액션 ==================== */
+.tsem-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.tsem-save-btn {
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  color: #ffffff;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+.tsem-save-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+}
+
+.tsem-save-btn:active {
+  transform: translateY(0);
+}
+
+.tsem-save-btn:disabled {
+  background: #cccccc;
+  color: #666666;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.tsem-save-btn:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* ==================== 반응형 디자인 ==================== */
+@media (max-width: 768px) {
+  .tsem-modal {
+    max-width: 95vw;
+    max-height: 95vh;
+  }
+  
+  .tsem-modal-content {
+    flex-direction: column;
+  }
+  
+  .tsem-left-panel {
+    border-right: none;
+    border-bottom: 2px solid #e0e0e0;
+    max-height: 40vh;
+  }
+  
+  .tsem-form-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  
+  .tsem-class-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .tsem-delete-btn {
+    align-self: flex-end;
+  }
+}
+
+@media (max-width: 480px) {
+  .tsem-modal-header {
+    padding: 16px 20px;
+  }
+  
+  .tsem-left-panel,
+  .tsem-right-panel {
+    padding: 20px;
+  }
+  
+}

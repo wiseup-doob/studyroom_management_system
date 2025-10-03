@@ -1,0 +1,330 @@
+/* StudentListPanel.css - 학생 목록 패널 스타일 (검은색/하얀색 테마) */
+
+/* ==================== 메인 패널 ==================== */
+.slp-main-panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff;
+}
+
+/* ==================== 헤더 ==================== */
+.slp-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #333333;
+  background-color: #f5f5f5;
+}
+
+.slp-panel-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #000000;
+}
+
+.slp-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.slp-btn-refresh {
+  background: none;
+  border: 1px solid #333333;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 16px;
+  transition: background-color 0.2s;
+  color: #000000;
+}
+
+.slp-btn-refresh:hover {
+  background-color: #e0e0e0;
+}
+
+.slp-btn-add-student {
+  background-color: #000000;
+  color: #ffffff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.slp-btn-add-student:hover {
+  background-color: #333333;
+}
+
+/* ==================== 검색 바 ==================== */
+.slp-search-container {
+  padding: 16px;
+  border-bottom: 1px solid #e0e0e0;
+  background-color: #ffffff;
+}
+
+.slp-search-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #333333;
+  border-radius: 4px;
+  font-size: 14px;
+  background-color: #ffffff;
+  color: #000000;
+}
+
+.slp-search-input:focus {
+  outline: none;
+  border-color: #000000;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+.slp-search-input::placeholder {
+  color: #666666;
+}
+
+/* ==================== 학생 목록 ==================== */
+.slp-student-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.slp-student-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  margin-bottom: 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border: 1px solid transparent;
+}
+
+.slp-student-item:hover {
+  background-color: #f5f5f5;
+}
+
+.slp-student-item.selected {
+  background-color: #000000;
+  color: #ffffff;
+  border-color: #333333;
+}
+
+.slp-student-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #333333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  font-weight: 600;
+  color: #ffffff;
+  font-size: 16px;
+}
+
+.slp-student-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.slp-student-name {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0 0 4px 0;
+  color: inherit;
+}
+
+.slp-student-details {
+  font-size: 12px;
+  color: #666666;
+  margin: 0;
+}
+
+.slp-student-item.selected .slp-student-details {
+  color: #cccccc;
+}
+
+.slp-timetable-badge {
+  background-color: #333333;
+  color: #ffffff;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 500;
+  margin-left: 8px;
+}
+
+.slp-student-item.selected .slp-timetable-badge {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+/* ==================== 빈 상태 ==================== */
+.slp-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  padding: 20px;
+  text-align: center;
+  color: #666666;
+}
+
+.slp-empty-state h3 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.slp-empty-state p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+/* ==================== 로딩 상태 ==================== */
+.slp-loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #666666;
+}
+
+.slp-loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e0e0e0;
+  border-top: 2px solid #333333;
+  border-radius: 50%;
+  animation: slp-spin 1s linear infinite;
+  margin-right: 8px;
+}
+
+@keyframes slp-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ==================== 반응형 디자인 ==================== */
+@media (max-width: 768px) {
+  .slp-panel-header {
+    padding: 12px;
+  }
+
+  .slp-panel-header h2 {
+    font-size: 16px;
+  }
+
+  .slp-search-container {
+    padding: 12px;
+  }
+
+  .slp-student-item {
+    padding: 10px 12px;
+  }
+
+  .slp-student-avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+
+  .slp-student-name {
+    font-size: 13px;
+  }
+
+  .slp-student-details {
+    font-size: 11px;
+  }
+}
+
+/* ==================== 접근성 ==================== */
+@media (prefers-reduced-motion: reduce) {
+  .slp-student-item,
+  .slp-btn-refresh,
+  .slp-btn-add-student {
+    transition: none;
+  }
+
+  .slp-loading-spinner {
+    animation: none;
+  }
+}
+
+/* ==================== 다크 모드 ==================== */
+@media (prefers-color-scheme: dark) {
+  .slp-main-panel {
+    background-color: #111111;
+  }
+
+  .slp-panel-header {
+    background-color: #222222;
+    border-bottom-color: #444444;
+  }
+
+  .slp-panel-header h2 {
+    color: #ffffff;
+  }
+
+  .slp-btn-refresh {
+    border-color: #666666;
+    color: #ffffff;
+  }
+
+  .slp-btn-refresh:hover {
+    background-color: #333333;
+  }
+
+  .slp-search-container {
+    background-color: #111111;
+  }
+
+  .slp-search-input {
+    background-color: #222222;
+    border-color: #666666;
+    color: #ffffff;
+  }
+
+  .slp-search-input:focus {
+    border-color: #ffffff;
+  }
+
+  .slp-search-input::placeholder {
+    color: #999999;
+  }
+
+  .slp-student-item:hover {
+    background-color: #222222;
+  }
+
+  .slp-student-item.selected {
+    background-color: #ffffff;
+    color: #000000;
+  }
+
+  .slp-student-details {
+    color: #999999;
+  }
+
+  .slp-student-item.selected .slp-student-details {
+    color: #666666;
+  }
+
+  .slp-empty-state {
+    color: #999999;
+  }
+
+  .slp-loading-state {
+    color: #999999;
+  }
+}

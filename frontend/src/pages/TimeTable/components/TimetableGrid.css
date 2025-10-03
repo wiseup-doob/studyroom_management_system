@@ -1,0 +1,578 @@
+/* TimetableGrid.css - 시간표 그리드 스타일 */
+
+/* ==================== 컨테이너 ==================== */
+.tg-timetable-grid-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0;
+  background-color: white;
+}
+
+/* ==================== 도구 모음 ==================== */
+.tg-timetable-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.tg-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  min-width: 0;
+}
+
+.tg-timetable-stats {
+  display: flex;
+  gap: 12px;
+}
+
+.tg-stat-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  min-width: 60px;
+}
+
+.tg-stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #2196F3;
+  line-height: 1;
+}
+
+.tg-stat-label {
+  font-size: 11px;
+  color: #666;
+  margin-top: 2px;
+  text-align: center;
+}
+
+.tg-toolbar-right {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+
+.tg-btn-auto-fill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
+}
+
+.tg-btn-auto-fill:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4);
+}
+
+.tg-btn-auto-fill:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.tg-btn-icon {
+  font-size: 16px;
+}
+
+.tg-btn-icon.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.tg-btn-text {
+  font-size: 13px;
+}
+
+/* ==================== 그리드 레이아웃 ==================== */
+.tg-timetable-grid {
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.tg-grid-header {
+  display: grid;
+  grid-template-columns: 100px repeat(auto-fit, minmax(120px, 1fr));
+  background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+  color: white;
+}
+
+.tg-time-column-header,
+.tg-day-header {
+  padding: 16px 8px;
+  text-align: center;
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.tg-time-column-header:last-child,
+.tg-day-header:last-child {
+  border-right: none;
+}
+
+.tg-header-text {
+  font-size: 14px;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.tg-day-name {
+  font-size: 14px;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.tg-day-abbr {
+  font-size: 11px;
+  opacity: 0.8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tg-grid-body {
+  background-color: white;
+}
+
+.tg-time-row {
+  display: grid;
+  grid-template-columns: 100px repeat(auto-fit, minmax(120px, 1fr));
+  border-bottom: 1px solid #f0f0f0;
+  min-height: 70px;
+}
+
+.tg-time-row:last-child {
+  border-bottom: none;
+}
+
+.tg-time-row:nth-child(even) {
+  background-color: #fafafa;
+}
+
+/* ==================== 시간 셀 ==================== */
+.tg-time-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-right: 1px solid #e0e0e0;
+  background-color: #f8f9fa;
+}
+
+.time-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.time-start {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+}
+
+.time-separator {
+  font-size: 10px;
+  color: #999;
+}
+
+.time-end {
+  font-size: 11px;
+  color: #666;
+}
+
+/* ==================== 스케줄 셀 ==================== */
+.tg-schedule-cell {
+  border-right: 1px solid #e0e0e0;
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 70px;
+  transition: all 0.2s ease;
+}
+
+.tg-schedule-cell:last-child {
+  border-right: none;
+}
+
+.tg-schedule-cell.empty:hover {
+  background-color: #E3F2FD;
+  box-shadow: inset 0 0 0 2px #2196F3;
+}
+
+.tg-schedule-cell.has-content:hover {
+  transform: scale(1.02);
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.tg-schedule-cell.selected {
+  box-shadow: inset 0 0 0 3px #2196F3;
+  z-index: 5;
+}
+
+.tg-schedule-cell.editable {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+
+
+/* ==================== 슬롯 내용 ==================== */
+.tg-slot-content {
+  width: 100%;
+  height: 100%;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  border-radius: 6px;
+  margin: 4px;
+  position: relative;
+  color: white;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.tg-slot-content.class {
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+}
+
+.tg-slot-content.self_study {
+  background: linear-gradient(135deg, #9E9E9E 0%, #757575 100%);
+}
+
+.tg-slot-content.auto-generated {
+  background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%);
+  border: 2px dashed rgba(255, 255, 255, 0.5);
+}
+
+.slot-subject {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 2px;
+  line-height: 1.2;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.slot-teacher {
+  font-size: 10px;
+  opacity: 0.9;
+  margin-bottom: 1px;
+}
+
+.slot-location {
+  font-size: 9px;
+  opacity: 0.8;
+}
+
+.auto-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background-color: rgba(255, 255, 255, 0.9);
+  color: #7B1FA2;
+  font-size: 8px;
+  padding: 1px 4px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+/* ==================== 빈 슬롯 ==================== */
+.tg-empty-slot {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #ccc;
+  transition: all 0.2s ease;
+}
+
+.tg-empty-icon {
+  font-size: 24px;
+  margin-bottom: 4px;
+  transition: transform 0.2s ease;
+}
+
+.tg-empty-text {
+  font-size: 11px;
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.tg-schedule-cell.empty:hover .tg-empty-slot {
+  color: #2196F3;
+}
+
+.tg-schedule-cell.empty:hover .tg-empty-icon {
+  transform: scale(1.2);
+}
+
+.tg-schedule-cell.empty:hover .tg-empty-text {
+  opacity: 1;
+}
+
+/* ==================== 범례 ==================== */
+.tg-timetable-legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.tg-legend-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tg-legend-items {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.tg-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #666;
+}
+
+.tg-legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.tg-legend-color.class {
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+}
+
+.tg-legend-color.self-study {
+  background: linear-gradient(135deg, #9E9E9E 0%, #757575 100%);
+}
+
+.tg-legend-color.auto-generated {
+  background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%);
+  border: 2px dashed #fff;
+}
+
+.tg-legend-color.empty {
+  background-color: #f0f0f0;
+  border: 2px dashed #ccc;
+}
+
+/* ==================== 도움말 ==================== */
+.help-section {
+  margin-top: 8px;
+}
+
+.help-section details {
+  background-color: #E3F2FD;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.help-section summary {
+  padding: 12px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1976D2;
+  background-color: #E3F2FD;
+  border: none;
+  outline: none;
+  transition: background-color 0.2s ease;
+}
+
+.help-section summary:hover {
+  background-color: #BBDEFB;
+}
+
+.help-content {
+  padding: 16px;
+  background-color: white;
+  border-top: 1px solid #90CAF9;
+}
+
+.help-content ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.help-content li {
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: #333;
+  line-height: 1.4;
+}
+
+/* ==================== 반응형 디자인 ==================== */
+@media (max-width: 1024px) {
+  .tg-grid-header,
+  .tg-time-row {
+    grid-template-columns: 80px repeat(auto-fit, minmax(100px, 1fr));
+  }
+
+  .tg-time-column-header,
+  .tg-day-header {
+    padding: 12px 6px;
+  }
+
+  .tg-day-name {
+    font-size: 12px;
+  }
+
+  .tg-day-abbr {
+    font-size: 10px;
+  }
+
+  .tg-slot-content {
+    padding: 6px;
+    margin: 2px;
+  }
+
+  .slot-subject {
+    font-size: 11px;
+  }
+
+  .slot-teacher {
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 768px) {
+  .tg-timetable-toolbar {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .tg-toolbar-left,
+  .tg-toolbar-right {
+    justify-content: center;
+  }
+
+  .tg-grid-header,
+  .tg-time-row {
+    grid-template-columns: 60px repeat(auto-fit, minmax(80px, 1fr));
+  }
+
+  .tg-time-column-header,
+  .tg-day-header {
+    padding: 8px 4px;
+  }
+
+  .tg-time-cell {
+    padding: 4px;
+  }
+
+  .time-display {
+    gap: 1px;
+  }
+
+  .time-start {
+    font-size: 11px;
+  }
+
+  .time-end {
+    font-size: 9px;
+  }
+
+  .tg-schedule-cell {
+    min-height: 60px;
+  }
+
+  .tg-slot-content {
+    padding: 4px;
+    margin: 1px;
+  }
+
+  .slot-subject {
+    font-size: 10px;
+  }
+
+  .slot-teacher,
+  .slot-location {
+    font-size: 8px;
+  }
+
+  .tg-empty-icon {
+    font-size: 18px;
+  }
+
+  .tg-empty-text {
+    font-size: 9px;
+  }
+
+  .tg-legend-items {
+    gap: 8px;
+  }
+
+  .tg-legend-item {
+    font-size: 11px;
+  }
+
+  .tg-legend-color {
+    width: 12px;
+    height: 12px;
+  }
+
+  .tg-btn-auto-fill {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .tg-btn-text {
+    font-size: 11px;
+  }
+}

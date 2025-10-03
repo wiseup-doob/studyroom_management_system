@@ -9,7 +9,7 @@
 
 export * from "./userProfile";
 export * from "./attendanceManagement";
-export * from "./timetableManagement";
+// timetableManagement.ts는 삭제됨 - studentTimetableManagement.ts 사용
 export * from "./shareScheduleManagement";
 export * from "./seatManagement";
 export * from "./settingsManagement";

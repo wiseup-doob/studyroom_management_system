@@ -2,7 +2,6 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { auth } from '../services/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { authService } from '../services/authService';
-import { apiService } from '../services/apiService';
 import { UserProfile, AuthContextType } from '../types/auth';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -39,7 +38,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setUserProfile(userProfile);
           
           // API 서비스에 사용자 ID 설정
-          apiService.setContext(user.uid, userProfile.isActive);
+          // apiService.setContext(user.uid, userProfile.isActive);
           
           console.log('사용자 로그인 성공:', {
             uid: user.uid,
@@ -58,7 +57,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       } else {
         setUserProfile(null);
         // 로그아웃 시 API 서비스 컨텍스트 초기화
-        apiService.setContext('', false);
+        // apiService.setContext('', false);
       }
       setLoading(false);
     });

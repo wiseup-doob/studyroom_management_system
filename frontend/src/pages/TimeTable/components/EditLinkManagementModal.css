@@ -1,0 +1,453 @@
+/* EditLinkManagementModal.css - 편집 링크 관리 모달 스타일 */
+
+.elm-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.elm-modal-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  width: 90%;
+  max-width: 800px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.elm-modal-header {
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  position: relative;
+}
+
+.elm-modal-header h2 {
+  margin: 0 0 8px 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.elm-student-name {
+  margin: 0;
+  color: #6b7280;
+  font-size: 16px;
+}
+
+.elm-close-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.elm-close-btn:hover {
+  background-color: #f3f4f6;
+}
+
+.elm-modal-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.elm-tab-menu {
+  display: flex;
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+}
+
+.elm-tab-btn {
+  flex: 1;
+  padding: 16px 24px;
+  background: none;
+  border: none;
+  font-size: 16px;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 3px solid transparent;
+}
+
+.elm-tab-btn:hover {
+  color: #374151;
+  background-color: #f3f4f6;
+}
+
+.elm-tab-btn.active {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+  background-color: white;
+}
+
+.elm-error-message {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 12px 16px;
+  margin: 16px 24px;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.elm-error-message button {
+  background: none;
+  border: none;
+  color: #dc2626;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+}
+
+.elm-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: #6b7280;
+}
+
+.elm-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e5e7eb;
+  border-top: 3px solid #2563eb;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.elm-links-section,
+.elm-logs-section {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.elm-empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6b7280;
+}
+
+.elm-empty-state p {
+  margin: 0;
+  font-size: 16px;
+}
+
+.elm-links-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.elm-link-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 20px;
+  background-color: #fafafa;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  transition: box-shadow 0.2s;
+}
+
+.elm-link-item:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.elm-link-info {
+  flex: 1;
+}
+
+.elm-link-code {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.elm-code-label {
+  font-weight: 600;
+  color: #374151;
+}
+
+.elm-code-value {
+  font-family: 'Courier New', monospace;
+  background-color: #f3f4f6;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #1f2937;
+}
+
+.elm-copy-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.elm-copy-btn:hover {
+  background-color: #e5e7eb;
+}
+
+.elm-link-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.elm-detail-row {
+  display: flex;
+  gap: 12px;
+}
+
+.elm-detail-label {
+  font-weight: 500;
+  color: #6b7280;
+  min-width: 80px;
+}
+
+.elm-detail-value {
+  color: #374151;
+}
+
+.elm-link-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.elm-deactivate-btn {
+  background-color: #dc2626;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.elm-deactivate-btn:hover {
+  background-color: #b91c1c;
+}
+
+.elm-logs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.elm-log-item {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background-color: #fafafa;
+  transition: box-shadow 0.2s;
+}
+
+.elm-log-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.elm-log-icon {
+  font-size: 20px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f3f4f6;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.elm-log-content {
+  flex: 1;
+}
+
+.elm-log-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.elm-log-action {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.elm-log-time {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.elm-log-details {
+  color: #374151;
+  margin-bottom: 4px;
+}
+
+.elm-log-user {
+  font-size: 14px;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.elm-modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.elm-close-modal-btn {
+  background-color: #6b7280;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.elm-close-modal-btn:hover {
+  background-color: #4b5563;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .elm-modal-container {
+    width: 95%;
+    max-height: 90vh;
+  }
+  
+  .elm-modal-header {
+    padding: 16px;
+  }
+  
+  .elm-modal-header h2 {
+    font-size: 20px;
+  }
+  
+  .elm-links-section,
+  .elm-logs-section {
+    padding: 16px;
+  }
+  
+  .elm-link-item {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .elm-link-actions {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+  
+  .elm-detail-row {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .elm-detail-label {
+    min-width: auto;
+  }
+}
+
+/* 새로운 버튼 스타일 */
+.elm-activate-btn {
+  background-color: #10b981;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  margin-right: 8px;
+}
+
+.elm-activate-btn:hover {
+  background-color: #059669;
+}
+
+.elm-delete-btn {
+  background-color: #6b7280;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.elm-delete-btn:hover {
+  background-color: #4b5563;
+}
+
+.elm-link-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.elm-link-status {
+  display: flex;
+  align-items: center;
+}
+
+.elm-status-badge {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.elm-log-meta {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 4px;
+}

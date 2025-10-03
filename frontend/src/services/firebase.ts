@@ -2,7 +2,7 @@ import { initializeApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
-import { getFunctions, Functions } from 'firebase/functions';
+import { getFunctions, Functions, connectFunctionsEmulator } from 'firebase/functions';
 
 interface FirebaseConfig {
   apiKey: string;
@@ -36,5 +36,8 @@ const app: FirebaseApp = initializeApp(firebaseConfig);
 export const auth: Auth = getAuth(app);
 export const db: Firestore = getFirestore(app);
 export const storage: FirebaseStorage = getStorage(app);
-export const functions: Functions = getFunctions(app);
+
+// Firebase Functions를 asia-northeast3 리전으로 설정
+export const functions: Functions = getFunctions(app, 'asia-northeast3');
+
 export default app;

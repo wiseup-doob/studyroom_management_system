@@ -1,0 +1,165 @@
+/**
+ * MainHeader.css - 메인 헤더 컴포넌트 스타일
+ * Phase 4 구현: 알림 시스템이 포함된 헤더 스타일
+ */
+
+.main-header {
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.mh-container {
+  width: 100%;
+  max-width: 100%;
+  padding: 0 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* 왼쪽 영역 */
+.mh-left {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.mh-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+/* 오른쪽 영역 */
+.mh-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.mh-notifications {
+  display: flex;
+  align-items: center;
+}
+
+/* 사용자 정보 영역 */
+.mh-user {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.mh-user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mh-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid #e5e7eb;
+  object-fit: cover;
+}
+
+.mh-user-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mh-username {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  line-height: 1.2;
+}
+
+.mh-email {
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.2;
+}
+
+/* 로그아웃 버튼 */
+.mh-logout-btn {
+  background: none;
+  border: 1px solid #d1d5db;
+  color: #6b7280;
+  font-size: 13px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.mh-logout-btn:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+  color: #4b5563;
+}
+
+.mh-logout-btn:active {
+  background: #f3f4f6;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .mh-container {
+    padding: 0 16px;
+  }
+
+  .mh-title {
+    font-size: 18px;
+  }
+
+  .mh-user-details {
+    display: none;
+  }
+
+  .mh-right {
+    gap: 12px;
+  }
+
+  .mh-avatar {
+    width: 32px;
+    height: 32px;
+  }
+
+  .mh-logout-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .mh-container {
+    padding: 0 12px;
+  }
+
+  .mh-title {
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .mh-right {
+    gap: 8px;
+  }
+
+  .mh-logout-btn {
+    padding: 6px 8px;
+    border: none;
+    background: none;
+    font-size: 11px;
+  }
+}

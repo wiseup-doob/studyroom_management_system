@@ -1,0 +1,668 @@
+/* CreateTimetableModal.css - 새 시간표 생성 모달 스타일 (검은색/하얀색 테마) */
+
+/* ==================== 모달 오버레이 ==================== */
+.ctm-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+/* ==================== 모달 컨테이너 ==================== */
+.ctm-create-timetable-modal {
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  width: 100%;
+  max-width: 650px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: ctm-slideInUp 0.3s ease-out;
+  border: 1px solid #333333;
+}
+
+/* ==================== 모달 헤더 ==================== */
+.ctm-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #333333;
+}
+
+.ctm-header-info h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #000000;
+}
+
+.ctm-student-info {
+  margin-top: 4px;
+  font-size: 14px;
+  color: #666666;
+}
+
+.ctm-student-name {
+  font-weight: 500;
+  color: #000000;
+}
+
+.ctm-close-button {
+  background: none;
+  border: 1px solid #333333;
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #000000;
+  transition: background-color 0.2s;
+}
+
+.ctm-close-button:hover {
+  background-color: #e0e0e0;
+}
+
+/* ==================== 진행 단계 표시 ==================== */
+.ctm-progress-steps {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px 24px;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.ctm-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  flex: 1;
+  max-width: 120px;
+}
+
+.ctm-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 15px;
+  right: -50%;
+  width: 100%;
+  height: 2px;
+  background-color: #e0e0e0;
+  z-index: 1;
+}
+
+.ctm-step.completed:not(:last-child)::after {
+  background-color: #000000;
+}
+
+.ctm-step.current:not(:last-child)::after {
+  background: linear-gradient(90deg, #000000 0%, #e0e0e0 100%);
+}
+
+.ctm-step-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  background-color: #e0e0e0;
+  color: #666666;
+  border: 2px solid #e0e0e0;
+  z-index: 2;
+  position: relative;
+}
+
+.ctm-step.completed .ctm-step-icon {
+  background-color: #000000;
+  color: #ffffff;
+  border-color: #000000;
+}
+
+.ctm-step.current .ctm-step-icon {
+  background-color: #ffffff;
+  color: #000000;
+  border-color: #000000;
+}
+
+.ctm-step-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #666666;
+  text-align: center;
+}
+
+.ctm-step.completed .ctm-step-label {
+  color: #000000;
+}
+
+.ctm-step.current .ctm-step-label {
+  color: #000000;
+  font-weight: 600;
+}
+
+/* ==================== 모달 콘텐츠 ==================== */
+.ctm-modal-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.ctm-form-section {
+  margin-bottom: 32px;
+}
+
+.ctm-section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #000000;
+  margin: 0 0 16px 0;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #333333;
+}
+
+.ctm-form-group {
+  margin-bottom: 20px;
+}
+
+.ctm-form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #000000;
+  margin-bottom: 8px;
+}
+
+.ctm-form-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #333333;
+  border-radius: 4px;
+  font-size: 14px;
+  background-color: #ffffff;
+  color: #000000;
+  transition: border-color 0.2s;
+}
+
+.ctm-form-input:focus {
+  outline: none;
+  border-color: #000000;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+.ctm-form-input::placeholder {
+  color: #999999;
+}
+
+.ctm-form-textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #333333;
+  border-radius: 4px;
+  font-size: 14px;
+  background-color: #ffffff;
+  color: #000000;
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.ctm-form-textarea:focus {
+  outline: none;
+  border-color: #000000;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+.ctm-form-textarea::placeholder {
+  color: #999999;
+}
+
+/* ==================== 시간 설정 ==================== */
+.ctm-time-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.ctm-time-input-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.ctm-time-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ctm-time-input input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #333333;
+  border-radius: 4px;
+  font-size: 14px;
+  background-color: #ffffff;
+  color: #000000;
+}
+
+.ctm-time-input input:focus {
+  outline: none;
+  border-color: #000000;
+}
+
+/* ==================== 요일 선택 ==================== */
+.ctm-days-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.ctm-day-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border: 1px solid #333333;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background-color: #ffffff;
+}
+
+.ctm-day-option:hover {
+  background-color: #f5f5f5;
+}
+
+.ctm-day-option.selected {
+  background-color: #000000;
+  color: #ffffff;
+  border-color: #000000;
+}
+
+.ctm-day-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: #000000;
+}
+
+.ctm-day-label {
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  flex: 1;
+}
+
+/* ==================== 요일별 시간 설정 ==================== */
+.ctm-daily-schedules {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ctm-day-schedule {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 16px;
+  background-color: #ffffff;
+  transition: all 0.2s;
+}
+
+.ctm-day-schedule:hover {
+  border-color: #333333;
+}
+
+.ctm-day-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.ctm-day-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ctm-day-time-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding-left: 24px;
+}
+
+.ctm-day-time-inputs .ctm-time-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ctm-day-time-inputs .ctm-time-input-group input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #333333;
+  border-radius: 4px;
+  font-size: 14px;
+  background-color: #ffffff;
+  color: #000000;
+}
+
+.ctm-day-time-inputs .ctm-time-input-group input:focus {
+  outline: none;
+  border-color: #000000;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+
+/* ==================== 자동 채우기 설정 ==================== */
+.ctm-auto-fill-section {
+  background-color: #f9f9f9;
+  padding: 20px;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+}
+
+.ctm-checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ctm-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: #000000;
+}
+
+.ctm-checkbox-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #000000;
+  cursor: pointer;
+}
+
+.ctm-auto-fill-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+/* ==================== 모달 푸터 ==================== */
+.ctm-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 20px 24px;
+  background-color: #f5f5f5;
+  border-top: 1px solid #e0e0e0;
+}
+
+.ctm-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 100px;
+}
+
+.ctm-btn-secondary {
+  background-color: #ffffff;
+  color: #000000;
+  border: 1px solid #333333;
+}
+
+.ctm-btn-secondary:hover {
+  background-color: #f5f5f5;
+}
+
+.ctm-btn-primary {
+  background-color: #000000;
+  color: #ffffff;
+  border: 1px solid #000000;
+}
+
+.ctm-btn-primary:hover {
+  background-color: #333333;
+}
+
+.ctm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ==================== 애니메이션 ==================== */
+@keyframes ctm-slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ==================== 반응형 디자인 ==================== */
+@media (max-width: 768px) {
+  .ctm-modal-overlay {
+    padding: 10px;
+  }
+
+  .ctm-create-timetable-modal {
+    max-height: 95vh;
+  }
+
+  .ctm-modal-header {
+    padding: 16px 20px;
+  }
+
+  .ctm-modal-content {
+    padding: 20px;
+  }
+
+  .ctm-time-inputs {
+    grid-template-columns: 1fr;
+  }
+
+  .ctm-days-grid {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  }
+
+  .ctm-auto-fill-options {
+    grid-template-columns: 1fr;
+  }
+
+  .ctm-modal-footer {
+    padding: 16px 20px;
+  }
+
+  .ctm-btn {
+    padding: 10px 20px;
+    min-width: 80px;
+  }
+}
+
+/* ==================== 접근성 ==================== */
+@media (prefers-reduced-motion: reduce) {
+  .ctm-create-timetable-modal {
+    animation: none;
+  }
+
+  .ctm-day-option,
+  .ctm-btn {
+    transition: none;
+  }
+}
+
+/* ==================== 다크 모드 ==================== */
+@media (prefers-color-scheme: dark) {
+  .ctm-modal-overlay {
+    background-color: rgba(0, 0, 0, 0.8);
+  }
+
+  .ctm-create-timetable-modal {
+    background: #111111;
+    border-color: #444444;
+  }
+
+  .ctm-modal-header {
+    background-color: #222222;
+    border-bottom-color: #444444;
+  }
+
+  .ctm-header-info h2 {
+    color: #ffffff;
+  }
+
+  .ctm-student-info {
+    color: #cccccc;
+  }
+
+  .ctm-student-name {
+    color: #ffffff;
+  }
+
+  .ctm-close-button {
+    border-color: #666666;
+    color: #ffffff;
+  }
+
+  .ctm-close-button:hover {
+    background-color: #333333;
+  }
+
+  .ctm-progress-steps {
+    background-color: #222222;
+    border-bottom-color: #444444;
+  }
+
+  .ctm-step-icon {
+    background-color: #444444;
+    color: #999999;
+    border-color: #444444;
+  }
+
+  .ctm-step.completed .ctm-step-icon {
+    background-color: #ffffff;
+    color: #000000;
+    border-color: #ffffff;
+  }
+
+  .ctm-step.current .ctm-step-icon {
+    background-color: #000000;
+    color: #ffffff;
+    border-color: #ffffff;
+  }
+
+  .ctm-step-label {
+    color: #999999;
+  }
+
+  .ctm-step.completed .ctm-step-label,
+  .ctm-step.current .ctm-step-label {
+    color: #ffffff;
+  }
+
+  .ctm-section-title {
+    color: #ffffff;
+    border-bottom-color: #444444;
+  }
+
+  .ctm-form-label {
+    color: #ffffff;
+  }
+
+  .ctm-form-input,
+  .ctm-form-textarea {
+    background-color: #222222;
+    border-color: #666666;
+    color: #ffffff;
+  }
+
+  .ctm-form-input:focus,
+  .ctm-form-textarea:focus {
+    border-color: #ffffff;
+  }
+
+  .ctm-form-input::placeholder,
+  .ctm-form-textarea::placeholder {
+    color: #666666;
+  }
+
+  .ctm-time-input input {
+    background-color: #222222;
+    border-color: #666666;
+    color: #ffffff;
+  }
+
+  .ctm-time-input input:focus {
+    border-color: #ffffff;
+  }
+
+  .ctm-day-option {
+    background-color: #222222;
+    border-color: #666666;
+    color: #ffffff;
+  }
+
+  .ctm-day-option:hover {
+    background-color: #333333;
+  }
+
+  .ctm-day-option.selected {
+    background-color: #ffffff;
+    color: #000000;
+    border-color: #ffffff;
+  }
+
+
+  .ctm-auto-fill-section {
+    background-color: #222222;
+    border-color: #444444;
+  }
+
+  .ctm-checkbox-label {
+    color: #ffffff;
+  }
+
+  .ctm-modal-footer {
+    background-color: #222222;
+    border-top-color: #444444;
+  }
+
+  .ctm-btn-secondary {
+    background-color: #222222;
+    color: #ffffff;
+    border-color: #666666;
+  }
+
+  .ctm-btn-secondary:hover {
+    background-color: #333333;
+  }
+}

@@ -1,0 +1,372 @@
+/* PendingSubmissionsPanel.css - 제출 대기 관리 패널 스타일 */
+
+.psp-container {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin-bottom: 20px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.psp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.psp-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.psp-count {
+  background: #2196F3;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.psp-refresh-btn {
+  padding: 6px 12px;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.psp-refresh-btn:hover {
+  background: #e9e9e9;
+  color: #333;
+}
+
+.psp-loading, .psp-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+  font-style: italic;
+}
+
+.psp-error {
+  text-align: center;
+  padding: 20px;
+  background: #ffebee;
+  border: 1px solid #ffcdd2;
+  border-radius: 4px;
+  color: #c62828;
+}
+
+.psp-retry-btn {
+  margin-top: 10px;
+  padding: 8px 16px;
+  background: #f44336;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.psp-retry-btn:hover {
+  background: #d32f2f;
+}
+
+.psp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.psp-item {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 16px;
+  background: #fafafa;
+  transition: all 0.2s;
+}
+
+.psp-item:hover {
+  border-color: #2196F3;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.psp-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.psp-item-info h4 {
+  margin: 0 0 4px 0;
+  color: #333;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.psp-timetable-name {
+  color: #666;
+  font-size: 14px;
+}
+
+.psp-item-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.psp-changes-count {
+  background: #ff9800;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.psp-submitted-date {
+  color: #666;
+  font-size: 12px;
+}
+
+.psp-notes {
+  background: #fff3e0;
+  border: 1px solid #ffcc02;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: #e65100;
+}
+
+.psp-notes strong {
+  color: #bf360c;
+}
+
+.psp-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.psp-actions button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.psp-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.psp-details-btn {
+  background: #e3f2fd;
+  color: #1976d2;
+  border: 1px solid #bbdefb;
+}
+
+.psp-details-btn:hover:not(:disabled) {
+  background: #bbdefb;
+}
+
+.psp-approve-btn {
+  background: #c8e6c9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+}
+
+.psp-approve-btn:hover:not(:disabled) {
+  background: #a5d6a7;
+}
+
+.psp-reject-btn {
+  background: #ffcdd2;
+  color: #c62828;
+  border: 1px solid #ef9a9a;
+}
+
+.psp-reject-btn:hover:not(:disabled) {
+  background: #ef9a9a;
+}
+
+/* 모달 스타일 */
+.psp-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.psp-modal-content {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.psp-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.psp-modal-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.psp-modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.psp-modal-close:hover {
+  color: #333;
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
+.psp-modal-body {
+  padding: 20px;
+}
+
+.psp-modal-info {
+  margin-bottom: 20px;
+}
+
+.psp-info-row {
+  display: flex;
+  margin-bottom: 8px;
+}
+
+.psp-info-row label {
+  min-width: 80px;
+  font-weight: 600;
+  color: #666;
+}
+
+.psp-info-row span {
+  flex: 1;
+  color: #333;
+}
+
+.psp-changes-summary {
+  background: #f9f9f9;
+  border-radius: 4px;
+  padding: 16px;
+}
+
+.psp-changes-summary h4 {
+  margin: 0 0 12px 0;
+  color: #333;
+  font-size: 16px;
+}
+
+.psp-changes-summary ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #666;
+}
+
+.psp-changes-summary li {
+  margin-bottom: 4px;
+}
+
+.psp-modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.psp-modal-actions button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.psp-cancel-btn {
+  background: #f5f5f5;
+  color: #666;
+  border: 1px solid #ddd;
+}
+
+.psp-cancel-btn:hover {
+  background: #e9e9e9;
+  color: #333;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .psp-item-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .psp-item-meta {
+    align-items: flex-start;
+  }
+
+  .psp-actions {
+    justify-content: flex-start;
+  }
+
+  .psp-modal-content {
+    width: 95%;
+    margin: 20px;
+  }
+
+  .psp-modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .psp-modal-actions button {
+    width: 100%;
+  }
+}

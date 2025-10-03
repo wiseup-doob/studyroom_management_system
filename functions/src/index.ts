@@ -9,9 +9,15 @@
  */
 
 import * as admin from "firebase-admin";
+import { setGlobalOptions } from "firebase-functions/v2";
 
 // Firebase Admin SDK 초기화
 admin.initializeApp();
+
+// 전역 리전 설정
+setGlobalOptions({
+  region: "asia-northeast3"
+});
 
 // ==================== 개인 사용자 관리 함수 ====================
 
@@ -35,13 +41,7 @@ export {
 } from "./modules/personal/attendanceManagement";
 
 // 시간표 관리 (고급 2레이어 구조)
-export {
-  createTimetable,
-  getTimetables,
-  updateTimetableSchedule,
-  autoFillSelfStudy,
-  deleteTimetable,
-} from "./modules/personal/timetableManagement";
+// 시간표 관리 기능은 studentTimetableManagement.ts에서 처리
 
 // 시간표 공유 및 협업 기능
 export {
@@ -50,6 +50,24 @@ export {
   contributeSchedule,
   processContribution,
   manageShareLink,
+  // 학생 시간표 편집 링크 관련 함수들
+  createStudentTimetableEditLink,
+  getSharedTimetableData,
+  getEditState,
+  updateEditState,
+  submitTimetableEdit,
+  // 편집 잠금 관리 함수들
+  createTimetableEditLock,
+  releaseTimetableEditLock,
+  getTimetableEditLock,
+  updateEditLockActivity,
+  // 편집 링크 관리 함수들
+  getStudentEditLinks,
+  deactivateEditLink,
+  activateEditLink,
+  deleteEditLink,
+  getEditLinkLogs,
+  recordEditLinkUsage,
 } from "./modules/personal/shareScheduleManagement";
 
 // 좌석 관리
@@ -81,4 +99,16 @@ export {
   updateStudent,
   deleteStudent,
   searchStudents,
+  getStudentsWithTimetables,
+  getStudentWithTimetable,
 } from "./modules/personal/studentManagement";
+
+// 학생별 시간표 관리
+export {
+  createStudentTimetable,
+  getStudentTimetables,
+  updateStudentTimetable,
+  deleteStudentTimetable,
+  setActiveStudentTimetable,
+  autoFillStudentTimetable,
+} from "./modules/personal/studentTimetableManagement";

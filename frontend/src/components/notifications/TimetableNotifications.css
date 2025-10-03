@@ -1,0 +1,350 @@
+/**
+ * TimetableNotifications.css - 시간표 알림 컴포넌트 스타일
+ * Phase 4 구현: 실시간 알림 UI 스타일
+ */
+
+.tn-container {
+  position: relative;
+  display: inline-block;
+}
+
+/* 벨 버튼 */
+.tn-bell-button {
+  position: relative;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  min-height: 40px;
+}
+
+.tn-bell-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.tn-bell-button.has-notifications {
+  animation: bellShake 0.5s ease-in-out;
+}
+
+.tn-bell-button.has-notifications .tn-bell-icon {
+  color: #f59e0b;
+}
+
+@keyframes bellShake {
+  0%, 50%, 100% { transform: rotate(0deg); }
+  10%, 30% { transform: rotate(-10deg); }
+  20%, 40% { transform: rotate(10deg); }
+}
+
+/* 알림 배지 */
+.tn-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: #ef4444;
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+/* 드롭다운 컨테이너 */
+.tn-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  width: 380px;
+  max-height: 500px;
+  overflow: hidden;
+  z-index: 1000;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 헤더 */
+.tn-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f3f4f6;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f9fafb;
+}
+
+.tn-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+.tn-count {
+  font-size: 14px;
+  color: #6b7280;
+  background: #e5e7eb;
+  padding: 4px 8px;
+  border-radius: 12px;
+}
+
+/* 알림 목록 */
+.tn-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.tn-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: #6b7280;
+}
+
+.tn-empty p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* 알림 아이템 */
+.tn-item {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f3f4f6;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  position: relative;
+}
+
+.tn-item:last-child {
+  border-bottom: none;
+}
+
+.tn-item:hover {
+  background-color: #f9fafb;
+}
+
+.tn-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: #3b82f6;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.tn-item:hover::before {
+  opacity: 1;
+}
+
+/* 알림 아이템 내용 */
+.tn-item-content {
+  width: 100%;
+}
+
+.tn-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.tn-student-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.tn-time {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.tn-item-body {
+  margin-bottom: 12px;
+}
+
+.tn-message {
+  font-size: 14px;
+  color: #4b5563;
+  margin: 0 0 4px 0;
+}
+
+.tn-notes {
+  font-size: 13px;
+  color: #6b7280;
+  font-style: italic;
+  margin: 0;
+  padding: 8px 12px;
+  background: #f3f4f6;
+  border-radius: 6px;
+  border-left: 3px solid #d1d5db;
+}
+
+.tn-item-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tn-timetable {
+  font-size: 12px;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.tn-status {
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tn-status.pending {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.tn-status.approved {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.tn-status.rejected {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* 더보기 버튼 */
+.tn-more {
+  padding: 12px 20px;
+  border-bottom: 1px solid #f3f4f6;
+  text-align: center;
+}
+
+.tn-more-button {
+  background: none;
+  border: none;
+  color: #3b82f6;
+  font-size: 14px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  padding: 8px;
+  border-radius: 6px;
+}
+
+.tn-more-button:hover {
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+/* 푸터 */
+.tn-footer {
+  padding: 12px 20px;
+  background: #f9fafb;
+  border-top: 1px solid #f3f4f6;
+}
+
+.tn-view-all-button {
+  width: 100%;
+  padding: 10px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.tn-view-all-button:hover {
+  background: #2563eb;
+}
+
+/* 오버레이 */
+.tn-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: transparent;
+  z-index: 999;
+}
+
+/* 스크롤바 스타일 */
+.tn-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.tn-list::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.tn-list::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.tn-list::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 640px) {
+  .tn-dropdown {
+    width: 320px;
+    right: -140px;
+  }
+
+  .tn-item {
+    padding: 14px 16px;
+  }
+
+  .tn-header {
+    padding: 14px 16px;
+  }
+
+  .tn-header h3 {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tn-dropdown {
+    width: 280px;
+    right: -120px;
+  }
+}

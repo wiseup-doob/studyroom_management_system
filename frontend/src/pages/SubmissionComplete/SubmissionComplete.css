@@ -1,0 +1,134 @@
+/**
+ * SubmissionComplete.css - 제출 완료 페이지 스타일
+ */
+
+.sc-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.sc-content {
+  background: white;
+  padding: 48px;
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  max-width: 600px;
+  width: 100%;
+}
+
+.sc-icon {
+  font-size: 72px;
+  margin-bottom: 24px;
+}
+
+.sc-content h1 {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 32px 0;
+}
+
+.sc-info {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 32px;
+}
+
+.sc-info p {
+  font-size: 18px;
+  color: #166534;
+  margin: 8px 0;
+  line-height: 1.5;
+}
+
+.sc-message {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.sc-message h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e40af;
+  margin: 0 0 16px 0;
+}
+
+.sc-message ol {
+  margin: 0;
+  padding-left: 24px;
+  color: #3730a3;
+}
+
+.sc-message li {
+  margin-bottom: 8px;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.sc-notice {
+  background: #fffbeb;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 32px;
+}
+
+.sc-notice p {
+  margin: 0;
+  color: #92400e;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.sc-btn-close {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 16px 32px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  min-width: 140px;
+}
+
+.sc-btn-close:hover {
+  background: #2563eb;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 640px) {
+  .sc-content {
+    padding: 32px 24px;
+    margin: 10px;
+  }
+
+  .sc-content h1 {
+    font-size: 28px;
+  }
+
+  .sc-info p {
+    font-size: 16px;
+  }
+
+  .sc-message li {
+    font-size: 14px;
+  }
+
+  .sc-notice p {
+    font-size: 14px;
+  }
+}

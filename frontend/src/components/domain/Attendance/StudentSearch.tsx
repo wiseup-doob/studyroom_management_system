@@ -116,7 +116,7 @@ export const StudentSearch: React.FC<StudentSearchProps> = ({
                         <div className="student-result__name">{student.name}</div>
                         <div className="student-result__details">
                           <span className="student-result__id">{student.studentId}</span>
-                          <span className="student-result__grade">{student.grade}학년</span>
+                          <span className="student-result__grade">{student.grade}</span>
                         </div>
                       </div>
                       <div className="student-result__action">

@@ -71,7 +71,7 @@ function validateStudentData(data: CreateStudentRequest | UpdateStudentRequest):
     }
   }
   
-  if ("grade" in data && data.grade && !["중1", "중2", "중3", "고1", "고2", "고3"].includes(data.grade)) {
+  if ("grade" in data && data.grade && !["초1", "초2", "초3", "초4", "초5", "초6", "중1", "중2", "중3", "고1", "고2", "고3"].includes(data.grade)) {
     throw new HttpsError("invalid-argument", "올바른 학년을 선택해주세요.");
   }
   
@@ -531,5 +531,169 @@ export const searchStudents = onCall({
     }
     
     throw new HttpsError("internal", "학생 검색 중 오류가 발생했습니다.");
+  }
+});
+
+/**
+ * 학생 + 시간표 통합 조회 (시간표 페이지용)
+ */
+export const getStudentsWithTimetables = onCall({
+  cors: true
+}, async (request) => {
+  try {
+    const { auth } = request;
+
+    if (!auth) {
+      throw new HttpsError("unauthenticated", "Google 인증이 필요합니다.");
+    }
+
+    const userId = auth.uid;
+
+    // 모든 활성 학생 조회
+    const studentsSnapshot = await db
+      .collection("users")
+      .doc(userId)
+      .collection("students")
+      .where("isActive", "==", true)
+      .orderBy("name")
+      .get();
+
+    const studentsWithTimetables = [];
+
+    for (const studentDoc of studentsSnapshot.docs) {
+      const studentData = {
+        id: studentDoc.id,
+        ...studentDoc.data(),
+        createdAt: (studentDoc.data().createdAt as any).toDate(),
+        updatedAt: (studentDoc.data().updatedAt as any).toDate()
+      } as Student;
+
+      // 해당 학생의 활성 시간표 조회
+      const activeTimetableSnapshot = await db
+        .collection("users")
+        .doc(userId)
+        .collection("student_timetables")
+        .where("studentId", "==", studentDoc.id)
+        .where("isActive", "==", true)
+        .limit(1)
+        .get();
+
+      // 시간표 개수 조회
+      const timetableCountSnapshot = await db
+        .collection("users")
+        .doc(userId)
+        .collection("student_timetables")
+        .where("studentId", "==", studentDoc.id)
+        .get();
+
+      const result: any = {
+        ...studentData,
+        activeTimetable: activeTimetableSnapshot.empty ? null : {
+          id: activeTimetableSnapshot.docs[0].id,
+          ...activeTimetableSnapshot.docs[0].data()
+        },
+        timetableCount: timetableCountSnapshot.size
+      };
+
+      studentsWithTimetables.push(result);
+    }
+
+    logger.info(`학생 + 시간표 통합 조회 성공: ${studentsWithTimetables.length}명`, { userId });
+
+    return {
+      success: true,
+      data: studentsWithTimetables
+    };
+  } catch (error) {
+    logger.error("학생 + 시간표 통합 조회 실패:", error);
+
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+
+    throw new HttpsError("internal", "학생 + 시간표 통합 조회 중 오류가 발생했습니다.");
+  }
+});
+
+/**
+ * 특정 학생 + 시간표 조회
+ */
+export const getStudentWithTimetable = onCall({
+  cors: true
+}, async (request) => {
+  try {
+    const { auth, data } = request;
+
+    if (!auth) {
+      throw new HttpsError("unauthenticated", "Google 인증이 필요합니다.");
+    }
+
+    const userId = auth.uid;
+    const { studentId } = data as { studentId: string };
+
+    if (!studentId) {
+      throw new HttpsError("invalid-argument", "학생 ID가 필요합니다.");
+    }
+
+    // 학생 정보 조회
+    const studentDoc = await db
+      .collection("users")
+      .doc(userId)
+      .collection("students")
+      .doc(studentId)
+      .get();
+
+    if (!studentDoc.exists) {
+      throw new HttpsError("not-found", "학생을 찾을 수 없습니다.");
+    }
+
+    const studentData = {
+      id: studentDoc.id,
+      ...studentDoc.data(),
+      createdAt: (studentDoc.data()?.createdAt as any).toDate(),
+      updatedAt: (studentDoc.data()?.updatedAt as any).toDate()
+    } as Student;
+
+    // 활성 시간표 조회
+    const activeTimetableSnapshot = await db
+      .collection("users")
+      .doc(userId)
+      .collection("student_timetables")
+      .where("studentId", "==", studentId)
+      .where("isActive", "==", true)
+      .limit(1)
+      .get();
+
+    // 시간표 개수 조회
+    const timetableCountSnapshot = await db
+      .collection("users")
+      .doc(userId)
+      .collection("student_timetables")
+      .where("studentId", "==", studentId)
+      .get();
+
+    const result = {
+      ...studentData,
+      activeTimetable: activeTimetableSnapshot.empty ? null : {
+        id: activeTimetableSnapshot.docs[0].id,
+        ...activeTimetableSnapshot.docs[0].data()
+      },
+      timetableCount: timetableCountSnapshot.size
+    };
+
+    logger.info(`학생 + 시간표 조회 성공: ${studentId}`, { userId });
+
+    return {
+      success: true,
+      data: result
+    };
+  } catch (error) {
+    logger.error("학생 + 시간표 조회 실패:", error);
+
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+
+    throw new HttpsError("internal", "학생 + 시간표 조회 중 오류가 발생했습니다.");
   }
 });

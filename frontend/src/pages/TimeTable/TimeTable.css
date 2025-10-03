@@ -1,6 +1,289 @@
-/* TimeTable 페이지 스타일 - 깔끔한 흰색 배경 */
-.timetable-container {
-  padding: 2rem;
-  min-height: 100vh;
-  background: #ffffff;
+/* TimeTable 페이지 스타일 - 검은색/하얀색 테마 */
+
+/* ==================== 메인 레이아웃 ==================== */
+.tt-main-page {
+  display: flex;
+  height: 100vh;
+  background: #000000;
+  gap: 20px;
+  padding: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* ==================== 왼쪽 학생 목록 섹션 ==================== */
+.tt-student-list-section {
+  width: 350px;
+  min-width: 350px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  border: 1px solid #333333;
+}
+
+/* ==================== 오른쪽 시간표 섹션 ==================== */
+.tt-timetable-section {
+  flex: 1;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  border: 1px solid #333333;
+}
+
+/* ==================== 빈 상태 (학생 선택 안됨) ==================== */
+.tt-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 60px 40px;
+  text-align: center;
+  background: #000000;
+  color: #ffffff;
+  position: relative;
+  overflow: hidden;
+}
+
+.tt-empty-state::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="20" r="1.5" fill="rgba(255,255,255,0.1)"/><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="30" cy="80" r="1.5" fill="rgba(255,255,255,0.1)"/><circle cx="70" cy="80" r="2" fill="rgba(255,255,255,0.1)"/></svg>');
+  pointer-events: none;
+}
+
+.tt-empty-state > * {
+  position: relative;
+  z-index: 1;
+}
+
+.tt-empty-state h3 {
+  margin-bottom: 16px;
+  font-size: 28px;
+  font-weight: 700;
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.tt-empty-state p {
+  margin-bottom: 0;
+  font-size: 16px;
+  color: #cccccc;
+  line-height: 1.6;
+  max-width: 400px;
+}
+
+/* ==================== 공통 컴포넌트 개선 ==================== */
+.tt-loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: #000000;
+}
+
+.tt-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #333333;
+  border-top: 4px solid #ffffff;
+  border-radius: 50%;
+  animation: tt-spin 1s linear infinite;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes tt-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.tt-loading-spinner p {
+  margin-top: 20px;
+  font-size: 16px;
+  color: #cccccc;
+  font-weight: 500;
+}
+
+.tt-error-message {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  background: #000000;
+  color: #ffffff;
+  padding: 20px 24px;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  max-width: 420px;
+  min-width: 300px;
+  border: 1px solid #333333;
+}
+
+.tt-error-message p {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+.tt-error-message button {
+  background: #333333;
+  border: 1px solid #555555;
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.tt-error-message button:hover {
+  background: #555555;
+  transform: translateY(-1px);
+}
+
+/* ==================== 애니메이션 및 트랜지션 ==================== */
+.tt-main-page > * {
+  animation: tt-fadeInUp 0.6s ease-out;
+}
+
+.tt-student-list-section {
+  animation-delay: 0.1s;
+}
+
+.tt-timetable-section {
+  animation-delay: 0.2s;
+}
+
+@keyframes tt-fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ==================== 반응형 디자인 개선 ==================== */
+@media (max-width: 1200px) {
+  .tt-student-list-section {
+    width: 320px;
+    min-width: 320px;
+  }
+}
+
+@media (max-width: 768px) {
+  .tt-main-page {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .tt-student-list-section {
+    width: 100%;
+    min-width: unset;
+    height: 220px;
+    order: 1;
+  }
+
+  .tt-timetable-section {
+    min-height: 500px;
+    order: 2;
+  }
+
+  .tt-empty-state {
+    padding: 40px 20px;
+  }
+
+  .tt-empty-state h3 {
+    font-size: 24px;
+  }
+
+  .tt-empty-state p {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tt-main-page {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .tt-student-list-section {
+    height: 200px;
+  }
+
+  .tt-timetable-section {
+    min-height: 400px;
+  }
+
+  .tt-empty-state {
+    padding: 30px 16px;
+  }
+
+  .tt-empty-state h3 {
+    font-size: 20px;
+  }
+
+  .tt-error-message {
+    top: 16px;
+    right: 16px;
+    left: 16px;
+    max-width: none;
+    min-width: unset;
+  }
+}
+
+/* ==================== 다크 모드 지원 준비 ==================== */
+@media (prefers-color-scheme: dark) {
+  .tt-main-page {
+    background: #000000;
+  }
+
+  .tt-student-list-section,
+  .tt-timetable-section {
+    background-color: #111111;
+    color: #ffffff;
+    border-color: #333333;
+  }
+
+  .tt-loading-spinner {
+    background: #000000;
+  }
+
+  .tt-loading-spinner p {
+    color: #cccccc;
+  }
+}
+
+/* ==================== 접근성 개선 ==================== */
+@media (prefers-reduced-motion: reduce) {
+  .tt-main-page > *,
+  .tt-spinner {
+    animation: none;
+  }
+
+  .tt-error-message button {
+    transition: none;
+  }
+}
+
+/* ==================== 고해상도 디스플레이 지원 ==================== */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .tt-student-list-section,
+  .tt-timetable-section {
+    border-width: 0.5px;
+  }
 }

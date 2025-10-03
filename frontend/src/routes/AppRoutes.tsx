@@ -8,6 +8,8 @@ import Home from '../pages/Home/Home';
 import Login from '../pages/Login/Login';
 import Student from '../pages/Student/Student';
 import TimeTable from '../pages/TimeTable/TimeTable';
+import StudentTimetableSharedEdit from '../pages/StudentTimetableSharedEdit/StudentTimetableSharedEdit';
+import SubmissionComplete from '../pages/SubmissionComplete/SubmissionComplete';
 
 // 로그인 상태에 따른 리다이렉트 컴포넌트
 export const AuthenticatedRoute: React.FC = () => {
@@ -53,17 +55,29 @@ export const AppRoutes: React.FC = () => {
         } 
       />
       
-      <Route 
-        path={ROUTES.TIMETABLE} 
+      <Route
+        path={ROUTES.TIMETABLE}
         element={
           <ProtectedRoute>
             <MainLayout>
               <TimeTable />
             </MainLayout>
           </ProtectedRoute>
-        } 
+        }
       />
-      
+
+      {/* 학생용 시간표 편집 페이지 - 사이드바 없음 (외부 공유 링크) */}
+      <Route
+        path="/student-timetable-edit/:shareToken"
+        element={<StudentTimetableSharedEdit />}
+      />
+
+      {/* 제출 완료 페이지 - 사이드바 없음 */}
+      <Route
+        path="/submission-complete"
+        element={<SubmissionComplete />}
+      />
+
       {/* 404 등 기타 경로는 루트로 리다이렉트 */}
       <Route path="*" element={<Navigate to={ROUTES.ROOT} replace />} />
     </Routes>

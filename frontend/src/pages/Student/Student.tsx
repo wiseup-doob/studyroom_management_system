@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { apiService } from '../../services/apiService';
+import { backendService } from '../../services/backendService';
 import type { Student, CreateStudentRequest } from '../../types/student';
 import './Student.css';
 
@@ -11,6 +11,8 @@ const Student: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newStudent, setNewStudent] = useState<CreateStudentRequest>({
     name: '',
@@ -32,7 +34,7 @@ const Student: React.FC = () => {
     
     try {
       // 실제 API 호출
-      const studentsData = await apiService.getStudents();
+      const studentsData = await backendService.getStudents();
       setStudents(studentsData);
       console.log('학생 목록 로드 성공:', studentsData.length);
     } catch (err) {
@@ -58,7 +60,7 @@ const Student: React.FC = () => {
 
     try {
       // 실제 API 호출
-      const createdStudent = await apiService.createStudent(newStudent);
+      const createdStudent = await backendService.createStudent(newStudent);
       setStudents(prev => [...prev, createdStudent]);
       setNewStudent({
         name: '',
@@ -81,6 +83,56 @@ const Student: React.FC = () => {
     }
   };
 
+  // 학생 수정 시작
+  const handleEditStudent = (student: Student) => {
+    setEditingStudent(student);
+    setShowEditForm(true);
+  };
+
+  // 학생 수정
+  const handleUpdateStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!editingStudent) return;
+
+    if (!editingStudent.name || !editingStudent.grade) {
+      setError('이름, 학년은 필수 입력 항목입니다.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      // 실제 API 호출
+      const updatedStudent = await backendService.updateStudent(editingStudent.id, {
+        name: editingStudent.name,
+        email: editingStudent.email,
+        grade: editingStudent.grade,
+        phone: editingStudent.phone,
+        parentName: editingStudent.parentName,
+        parentPhone: editingStudent.parentPhone,
+        address: editingStudent.address
+      });
+      
+      setStudents(prev => prev.map(student => 
+        student.id === editingStudent.id ? updatedStudent : student
+      ));
+      
+      setEditingStudent(null);
+      setShowEditForm(false);
+      setSuccess(`${updatedStudent.name} 학생 정보가 성공적으로 수정되었습니다.`);
+      
+      console.log('학생 수정 성공:', updatedStudent);
+    } catch (err) {
+      console.error('학생 수정 실패:', err);
+      setError(err instanceof Error ? err.message : '학생 수정에 실패했습니다.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // 학생 삭제
   const handleDeleteStudent = async (id: string) => {
     if (!confirm('정말로 이 학생을 삭제하시겠습니까?')) return;
@@ -91,7 +143,7 @@ const Student: React.FC = () => {
 
     try {
       // 실제 API 호출
-      await apiService.deleteStudent(id);
+      await backendService.deleteStudent(id);
       const deletedStudent = students.find(s => s.id === id);
       setStudents(prev => prev.filter(student => student.id !== id));
       setSuccess(`${deletedStudent?.name || '학생'}이 성공적으로 삭제되었습니다.`);
@@ -201,12 +253,24 @@ const Student: React.FC = () => {
                   required
                 >
                   <option value="">선택하세요</option>
-                  <option value="중1">중1</option>
-                  <option value="중2">중2</option>
-                  <option value="중3">중3</option>
-                  <option value="고1">고1</option>
-                  <option value="고2">고2</option>
-                  <option value="고3">고3</option>
+                  <optgroup label="초등학교">
+                    <option value="초1">초1</option>
+                    <option value="초2">초2</option>
+                    <option value="초3">초3</option>
+                    <option value="초4">초4</option>
+                    <option value="초5">초5</option>
+                    <option value="초6">초6</option>
+                  </optgroup>
+                  <optgroup label="중학교">
+                    <option value="중1">중1</option>
+                    <option value="중2">중2</option>
+                    <option value="중3">중3</option>
+                  </optgroup>
+                  <optgroup label="고등학교">
+                    <option value="고1">고1</option>
+                    <option value="고2">고2</option>
+                    <option value="고3">고3</option>
+                  </optgroup>
                 </select>
               </div>
               <div className="form-group">
@@ -268,6 +332,121 @@ const Student: React.FC = () => {
         </div>
       )}
 
+      {showEditForm && editingStudent && (
+        <div className="add-student-form">
+          <h2>학생 정보 수정</h2>
+          <form onSubmit={handleUpdateStudent}>
+            <div className="form-row">
+              <div className="form-group">
+                <label>이름 *</label>
+                <input
+                  type="text"
+                  value={editingStudent.name}
+                  onChange={(e) => setEditingStudent({...editingStudent, name: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>이메일</label>
+                <input
+                  type="email"
+                  value={editingStudent.email}
+                  onChange={(e) => setEditingStudent({...editingStudent, email: e.target.value})}
+                />
+              </div>
+            </div>
+            
+            <div className="form-row">
+              <div className="form-group">
+                <label>학년 *</label>
+                <select
+                  value={editingStudent.grade}
+                  onChange={(e) => setEditingStudent({...editingStudent, grade: e.target.value})}
+                  required
+                >
+                  <option value="">선택하세요</option>
+                  <optgroup label="초등학교">
+                    <option value="초1">초1</option>
+                    <option value="초2">초2</option>
+                    <option value="초3">초3</option>
+                    <option value="초4">초4</option>
+                    <option value="초5">초5</option>
+                    <option value="초6">초6</option>
+                  </optgroup>
+                  <optgroup label="중학교">
+                    <option value="중1">중1</option>
+                    <option value="중2">중2</option>
+                    <option value="중3">중3</option>
+                  </optgroup>
+                  <optgroup label="고등학교">
+                    <option value="고1">고1</option>
+                    <option value="고2">고2</option>
+                    <option value="고3">고3</option>
+                  </optgroup>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>전화번호</label>
+                <input
+                  type="tel"
+                  value={editingStudent.phone || ''}
+                  onChange={(e) => setEditingStudent({...editingStudent, phone: e.target.value})}
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label>보호자 이름</label>
+                <input
+                  type="text"
+                  value={editingStudent.parentName || ''}
+                  onChange={(e) => setEditingStudent({...editingStudent, parentName: e.target.value})}
+                />
+              </div>
+              <div className="form-group">
+                <label>보호자 전화번호</label>
+                <input
+                  type="tel"
+                  value={editingStudent.parentPhone || ''}
+                  onChange={(e) => setEditingStudent({...editingStudent, parentPhone: e.target.value})}
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label>주소</label>
+              <input
+                type="text"
+                value={editingStudent.address || ''}
+                onChange={(e) => setEditingStudent({...editingStudent, address: e.target.value})}
+              />
+            </div>
+
+            <div className="form-actions">
+              <button 
+                type="submit" 
+                className="submit-btn"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? '수정 중...' : '수정'}
+              </button>
+              <button 
+                type="button" 
+                className="cancel-btn"
+                onClick={() => {
+                  setEditingStudent(null);
+                  setShowEditForm(false);
+                }}
+                disabled={isSubmitting}
+              >
+                취소
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       <div className="students-list">
         <h2>학생 목록 ({students.length}명)</h2>
         {students.length === 0 ? (
@@ -288,7 +467,12 @@ const Student: React.FC = () => {
                   )}
                 </div>
                 <div className="student-actions">
-                  <button className="edit-btn">수정</button>
+                  <button 
+                    className="edit-btn"
+                    onClick={() => handleEditStudent(student)}
+                  >
+                    수정
+                  </button>
                   <button 
                     className="delete-btn"
                     onClick={() => handleDeleteStudent(student.id)}
