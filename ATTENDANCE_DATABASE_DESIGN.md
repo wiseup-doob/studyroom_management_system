@@ -21,17 +21,22 @@
 /users/{userId}/
 ├── students/                      # 학생 정보
 ├── student_timetables/            # 학생별 시간표 (등원/하원 시간 포함)
-├── attendance_records/            # 기존 출석 기록 (간단한 체크인/아웃)
+├── attendance_records/            # 기존: 관리자 자신의 체크인/아웃 기록
 ├── attendance_summaries/          # 출석 통계
-├── seats/                         # 좌석 정보
-├── seat_assignments/              # 좌석 배정
-├── seat_layouts/                  # 좌석 배치도
+├── seats/                         # ⭐ 좌석 정보 (출석 페이지에서 활용)
+├── seat_assignments/              # ⭐ 좌석 배정 (출석 페이지에서 활용)
+├── seat_layouts/                  # ⭐ 좌석 배치도 (출석 페이지에서 활용)
 ├── timetables/                    # 기본 시간표
 ├── shared_schedules/              # 공유 스케줄
 ├── schedule_contributions/        # 스케줄 기여
 ├── class_sections/                # 반 정보
 └── settings/                      # 사용자 설정
 ```
+
+**중요 - 기존 시스템 활용**:
+- 기존 `seats`, `seat_assignments`, `seat_layouts`는 **출석 관리 페이지에서 활용**됩니다.
+- 이미 구현된 좌석 관리 Functions와 타입을 그대로 사용합니다.
+- 프론트엔드에도 `Classroom`, `AttendanceSeat` 타입과 컴포넌트가 이미 존재합니다.
 
 ### 1.2 핵심 기존 데이터 구조
 
@@ -97,13 +102,23 @@ interface StudentTimetableData {
 
 **중요**: 출석 시스템은 `basicSchedule.dailySchedules`의 `arrivalTime`과 `departureTime`을 기준으로 학생의 예정 등/하원 시간을 파악합니다.
 
-#### 1.2.3 기존 Seat & SeatLayout
+#### 1.2.3 기존 Seat & SeatLayout (출석 페이지에서 활용)
+
+**Backend 타입** (`functions/src/modules/personal/seatManagement.ts`):
 ```typescript
 interface Seat {
   seatNumber: string;
   location: { x: number; y: number };
   status: "available" | "occupied" | "maintenance";
   createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+interface SeatAssignment {
+  seatId: string;
+  assignedAt: Timestamp;
+  expiresAt?: Timestamp;
+  status: "active" | "expired" | "cancelled";
   updatedAt: Timestamp;
 }
 
@@ -122,136 +137,160 @@ interface SeatLayout {
 }
 ```
 
+**Frontend 타입** (`frontend/src/types/attendance.ts`):
+```typescript
+interface Classroom {
+  id: string;
+  name: string;
+  rows: number;
+  cols: number;
+  seats: AttendanceSeat[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface AttendanceSeat {
+  id: string;
+  number: number;
+  row: number;
+  col: number;
+  studentId?: string;
+  status: SeatStatus;
+}
+
+type SeatStatus =
+  | 'empty'         // 빈 좌석
+  | 'not-enrolled'  // 미등원
+  | 'dismissed'     // 사유결석
+  | 'present'       // 등원
+  | 'unauthorized'  // 무단결석
+  | 'authorized'    // 하원
+```
+
+**이미 구현된 컴포넌트**:
+- `SeatingChart.tsx`: 좌석 배치도 표시
+- `ClassroomSelector.tsx`: 교실 선택
+- `Seat.tsx`: 개별 좌석 컴포넌트
+- `AttendanceContext.tsx`: 출석 상태 관리
+
 ---
 
 ## 2. 출석 관리 시스템 데이터베이스 설계
 
 ### 2.1 신규/확장 컬렉션 개요
 
-출석 관리 페이지를 위해 다음 컬렉션을 추가/확장합니다:
+출석 관리 페이지를 위해 다음을 추가/확장합니다:
 
 ```
 /users/{userId}/
-├── attendance_classrooms/         # 🆕 자리배치도 (교실) 정보
-├── attendance_seat_assignments/   # 🆕 학생별 자리 할당
-├── attendance_records/            # 📝 확장: 상세 출결 기록
-├── attendance_check_links/        # 🆕 출결 체크 링크 (숫자 패드)
-└── attendance_student_pins/       # 🆕 학생별 출석 PIN 번호
+├── seat_layouts/                  # ✅ 기존 활용: 좌석 배치도 (행x열 그룹 구조 확장)
+├── seats/                         # ✅ 기존 활용: 좌석 정보
+├── seat_assignments/              # ✅ 기존 확장: 학생 좌석 할당 (studentId 추가)
+├── student_attendance_records/    # 🆕 신규: 학생 출결 기록
+├── attendance_check_links/        # 🆕 신규: 출결 체크 링크 (숫자 패드)
+└── attendance_student_pins/       # 🆕 신규: 학생별 출석 PIN 번호
 ```
+
+**기존 시스템 활용 전략**:
+1. **`seat_layouts`**: 기존 구조 확장하여 여러 그룹(2x3, 3x3 등) 지원
+2. **`seats`**: 기존 그대로 사용
+3. **`seat_assignments`**: 기존 구조에 `studentId`, `timetableId` 필드 추가
+4. **신규 컬렉션**: 학생 출석 기록, PIN, 체크 링크만 새로 생성
 
 ---
 
 ## 3. 상세 컬렉션 설계
 
-### 3.1 attendance_classrooms (자리배치도/교실)
+### 3.1 seat_layouts (좌석 배치도) - 기존 확장
 
-각 교실은 여러 개의 그룹으로 구성되며, 각 그룹은 행x열 형태의 좌석 배치를 가집니다.
+**기존 구조를 확장**하여 여러 그룹 지원 및 출석 페이지 요구사항 반영
 
 ```typescript
-interface AttendanceClassroom {
-  id: string;                    // 문서 ID (Firestore 자동 생성)
-  userId: string;                // 소유자 사용자 ID
-  name: string;                  // 교실 이름 (예: "1층 A반", "2층 자습실")
-  description?: string;          // 설명
-  isActive: boolean;             // 활성 상태
+interface SeatLayoutExtended {
+  // 기존 필드
+  name: string;                  // 교실 이름 (예: "1층 자습실")
 
-  // 그룹 배치 정보 (여러 그룹 지원)
-  groups: {
-    id: string;                  // 그룹 ID (UUID)
-    name: string;                // 그룹 이름 (예: "앞쪽", "뒤쪽", "창가")
-    rows: number;                // 행 개수 (예: 2)
-    cols: number;                // 열 개수 (예: 3)
-    position: {                  // UI 상 그룹 배치 위치
-      x: number;
-      y: number;
-    };
-    seats: {
-      id: string;                // 좌석 ID (UUID)
-      row: number;               // 좌석 행 위치 (0부터 시작)
-      col: number;               // 좌석 열 위치 (0부터 시작)
-      label: string;             // 좌석 라벨 (예: "A-1", "1", "창가-1")
-      isAvailable: boolean;      // 좌석 사용 가능 여부
+  // 확장: 여러 그룹 지원
+  layout: {
+    // 기존 구조 유지하면서 그룹 개념 추가
+    groups?: {                   // 선택적 필드 (하위 호환성)
+      id: string;                // 그룹 ID (UUID)
+      name: string;              // 그룹 이름 (예: "앞쪽", "뒤쪽")
+      rows: number;              // 행 개수
+      cols: number;              // 열 개수
+      position: { x: number; y: number; };
     }[];
-  }[];
 
-  totalSeats: number;            // 전체 좌석 수 (계산값)
-  assignedSeats: number;         // 할당된 좌석 수 (계산값)
+    // 기존 필드 유지
+    seats: {
+      id: string;
+      position: { x: number; y: number };
+      size: { width: number; height: number };
+      groupId?: string;          // 🆕 어느 그룹에 속하는지
+      row?: number;              // 🆕 그룹 내 행 위치
+      col?: number;              // 🆕 그룹 내 열 위치
+      label?: string;            // 🆕 좌석 라벨 (예: "A-1")
+    }[];
+
+    dimensions: {
+      width: number;
+      height: number;
+    };
+  };
 
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
 ```
 
-**예시 데이터**:
+**하위 호환성 유지**:
+- 기존 `seats` 배열 구조 그대로 유지
+- `groups`, `groupId`, `row`, `col`, `label` 필드는 **선택적(optional)**
+- 기존 좌석 레이아웃도 정상 작동
+
+**예시 - 출석 페이지용 확장 데이터**:
 ```json
 {
-  "id": "classroom_001",
-  "userId": "user_abc",
   "name": "1층 자습실",
-  "description": "메인 자습실",
-  "isActive": true,
-  "groups": [
-    {
-      "id": "group_001",
-      "name": "앞쪽",
-      "rows": 2,
-      "cols": 3,
-      "position": { "x": 0, "y": 0 },
-      "seats": [
-        { "id": "seat_001", "row": 0, "col": 0, "label": "A-1", "isAvailable": true },
-        { "id": "seat_002", "row": 0, "col": 1, "label": "A-2", "isAvailable": true },
-        { "id": "seat_003", "row": 0, "col": 2, "label": "A-3", "isAvailable": true },
-        { "id": "seat_004", "row": 1, "col": 0, "label": "B-1", "isAvailable": true },
-        { "id": "seat_005", "row": 1, "col": 1, "label": "B-2", "isAvailable": true },
-        { "id": "seat_006", "row": 1, "col": 2, "label": "B-3", "isAvailable": true }
-      ]
-    },
-    {
-      "id": "group_002",
-      "name": "뒤쪽",
-      "rows": 3,
-      "cols": 3,
-      "position": { "x": 0, "y": 250 },
-      "seats": [
-        // ... 9개의 좌석
-      ]
-    }
-  ],
-  "totalSeats": 15,
-  "assignedSeats": 8,
-  "createdAt": "2025-01-15T00:00:00Z",
-  "updatedAt": "2025-01-15T00:00:00Z"
+  "layout": {
+    "groups": [
+      { "id": "group_001", "name": "앞쪽", "rows": 2, "cols": 3, "position": { "x": 0, "y": 0 } },
+      { "id": "group_002", "name": "뒤쪽", "rows": 3, "cols": 3, "position": { "x": 0, "y": 250 } }
+    ],
+    "seats": [
+      { "id": "seat_001", "position": { "x": 0, "y": 0 }, "size": { "width": 60, "height": 60 },
+        "groupId": "group_001", "row": 0, "col": 0, "label": "A-1" },
+      { "id": "seat_002", "position": { "x": 70, "y": 0 }, "size": { "width": 60, "height": 60 },
+        "groupId": "group_001", "row": 0, "col": 1, "label": "A-2" }
+      // ... 나머지 좌석
+    ],
+    "dimensions": { "width": 800, "height": 600 }
+  }
 }
 ```
 
 ---
 
-### 3.2 attendance_seat_assignments (학생 좌석 할당)
+### 3.2 seat_assignments (학생 좌석 할당) - 기존 확장
 
-학생과 좌석을 연결하는 컬렉션입니다.
+**기존 구조에 학생 출석 관련 필드를 추가**합니다.
 
 ```typescript
-interface AttendanceSeatAssignment {
-  id: string;                    // 문서 ID (Firestore 자동 생성)
-  userId: string;                // 소유자 사용자 ID
+interface SeatAssignmentExtended {
+  // 🆕 기존 필드
+  seatId: string;                // seats 컬렉션의 ID
+  assignedAt: Timestamp;
+  expiresAt?: Timestamp;
+  status: "active" | "expired" | "cancelled";
+  updatedAt: Timestamp;
 
-  // 학생 정보
-  studentId: string;             // students 컬렉션의 ID
-  studentName: string;           // 학생 이름 (캐싱)
+  // 🆕 출석 페이지용 추가 필드 (선택적)
+  studentId?: string;            // 학생 ID (students 컬렉션)
+  studentName?: string;          // 학생 이름 (캐싱)
+  timetableId?: string;          // 시간표 ID (student_timetables 컬렉션)
 
-  // 좌석 정보
-  classroomId: string;           // attendance_classrooms의 ID
-  classroomName: string;         // 교실 이름 (캐싱)
-  groupId: string;               // 그룹 ID
-  seatId: string;                // 좌석 ID
-  seatLabel: string;             // 좌석 라벨 (캐싱)
-
-  // 시간표 연동 정보
-  timetableId: string;           // student_timetables의 ID
-  timetableName: string;         // 시간표 이름 (캐싱)
-
-  // 예정 등/하원 시간 (시간표에서 가져온 값, 캐싱)
-  expectedSchedule: {
+  // 🆕 예정 등/하원 시간 캐싱
+  expectedSchedule?: {
     monday?: { arrivalTime: string; departureTime: string; isActive: boolean; };
     tuesday?: { arrivalTime: string; departureTime: string; isActive: boolean; };
     wednesday?: { arrivalTime: string; departureTime: string; isActive: boolean; };
@@ -261,15 +300,17 @@ interface AttendanceSeatAssignment {
     sunday?: { arrivalTime: string; departureTime: string; isActive: boolean; };
   };
 
-  // 상태 정보
-  status: "active" | "inactive";  // 할당 상태
-  assignedAt: Timestamp;          // 할당 시간
-  expiresAt?: Timestamp;          // 만료 시간 (선택)
-
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  // 🆕 좌석 메타 정보 (캐싱)
+  seatLayoutId?: string;         // seat_layouts의 ID
+  seatLabel?: string;            // 좌석 라벨 (예: "A-1")
+  groupId?: string;              // 그룹 ID
 }
 ```
+
+**하위 호환성**:
+- 기존 필드는 그대로 유지
+- 출석 페이지 관련 필드는 모두 **선택적(optional)**
+- 기존 좌석 배정 시스템도 정상 작동
 
 **중요 규칙**:
 - 학생 할당 시 해당 학생의 **활성 시간표(`isActive: true`)**를 조회
@@ -278,19 +319,24 @@ interface AttendanceSeatAssignment {
 
 ---
 
-### 3.3 attendance_records (출결 기록) - 확장
+### 3.3 student_attendance_records (학생 출결 기록) - 신규
 
-기존 `attendance_records` 컬렉션을 확장하여 상세 출결 정보를 기록합니다.
+학생들의 출결 정보를 상세하게 기록하는 신규 컬렉션입니다.
+
+**기존 `attendance_records`와의 차이점**:
+- 기존: 관리자(사용자) 본인의 체크인/아웃 기록
+- 신규: 학생들의 등원/하원 출결 기록
+- 완전히 별도 컬렉션으로 관리하여 혼동 방지
 
 ```typescript
-type AttendanceStatus =
+type StudentAttendanceStatus =
   | "checked_in"      // 등원 (실제 등원 완료)
   | "checked_out"     // 하원 (실제 하원 완료)
   | "not_arrived"     // 미등원 (예정 시간 지났지만 미출석)
   | "absent_excused"  // 사유결석
   | "absent_unexcused"; // 무단결석
 
-interface AttendanceRecord {
+interface StudentAttendanceRecord {
   id: string;                    // 문서 ID: {studentId}_{date} 형식
   userId: string;                // 소유자 사용자 ID
 
@@ -316,7 +362,7 @@ interface AttendanceRecord {
   actualDepartureTime?: Timestamp; // 실제 하원 시간 (PIN 재입력 시각)
 
   // 출결 상태
-  status: AttendanceStatus;
+  status: StudentAttendanceStatus;
 
   // 사유결석 정보
   excusedReason?: string;        // 사유결석 사유
@@ -447,14 +493,19 @@ interface AttendanceStudentPin {
 ### 4.1 학생 자리 할당 프로세스
 
 ```
-1. 관리자가 교실 생성 (attendance_classrooms)
+1. 관리자가 좌석 배치도 생성/수정 (seat_layouts)
+   - 기존 createSeatLayout Function 활용
+   - groups 필드 추가하여 여러 그룹(2x3, 3x3 등) 구성
+   - 각 좌석에 groupId, row, col, label 설정
 2. 학생 선택
 3. 학생의 활성 시간표 조회 (student_timetables where studentId & isActive)
 4. 시간표의 basicSchedule.dailySchedules 검증
    - 최소 1개 요일이 isActive: true 이어야 함
    - 각 활성 요일은 arrivalTime, departureTime 필수
-5. 검증 통과 시 좌석 할당 (attendance_seat_assignments)
-   - expectedSchedule에 시간표 데이터 캐싱
+5. 검증 통과 시 좌석 할당 (seat_assignments)
+   - 기존 assignSeat Function 활용
+   - studentId, studentName, timetableId, expectedSchedule 필드 추가
+   - 시간표 데이터 캐싱
 ```
 
 ### 4.2 출석 체크 프로세스 (PIN 입력)
@@ -464,7 +515,7 @@ interface AttendanceStudentPin {
 2. 숫자 패드로 PIN 입력
 3. 서버에서 PIN 검증 (attendance_student_pins)
 4. 검증 성공 시:
-   a. 오늘 날짜 출석 기록 조회 (attendance_records)
+   a. 오늘 날짜 출석 기록 조회 (student_attendance_records)
    b. 기록 없음 → 신규 생성 (status: "checked_in")
    c. 기록 있음 & status: "checked_in" → 업데이트 (status: "checked_out")
    d. actualArrivalTime 또는 actualDepartureTime 기록
@@ -516,8 +567,8 @@ service cloud.firestore {
           request.auth.uid == userId;
       }
 
-      // 📝 출석 기록 (확장)
-      match /attendance_records/{recordId} {
+      // 🆕 학생 출석 기록 (기존 attendance_records와 별도)
+      match /student_attendance_records/{recordId} {
         allow read, write: if request.auth != null &&
           request.auth.uid == userId;
       }
@@ -547,17 +598,18 @@ service cloud.firestore {
 ### 6.1 필요한 Functions 목록
 
 ```typescript
-// ==================== 교실 관리 ====================
-export const createAttendanceClassroom        // 교실 생성
-export const getAttendanceClassrooms          // 교실 목록 조회
-export const updateAttendanceClassroom        // 교실 수정
-export const deleteAttendanceClassroom        // 교실 삭제
+// ==================== 좌석 배치 관리 (기존 활용) ====================
+// 기존 seatManagement.ts의 Functions 활용
+export const createSeatLayout                 // ✅ 기존 - groups 필드 확장
+export const getSeatLayouts                   // ✅ 기존
+export const createSeat                       // ✅ 기존
+export const getSeats                         // ✅ 기존
 
-// ==================== 좌석 할당 ====================
-export const assignStudentToSeat              // 학생 좌석 할당
-export const unassignStudentFromSeat          // 좌석 할당 해제
-export const getClassroomSeatingChart         // 교실 좌석 배치 현황 조회
-export const validateStudentTimetableForSeat  // 시간표 검증 (할당 가능 여부)
+// ==================== 좌석 할당 (기존 확장) ====================
+export const assignSeat                       // ✅ 기존 - studentId 등 필드 추가
+export const unassignSeat                     // ✅ 기존
+export const getCurrentSeatAssignment         // ✅ 기존
+export const validateStudentTimetableForSeat  // 🆕 신규 - 시간표 검증
 
 // ==================== 출석 체크 ====================
 export const createAttendanceCheckLink        // 출석 체크 링크 생성
@@ -719,7 +771,7 @@ export const checkAttendanceByPin = onCall({
   const recordRef = db
     .collection("users")
     .doc(userId)
-    .collection("attendance_records")
+    .collection("student_attendance_records")
     .doc(recordId);
 
   const recordDoc = await recordRef.get();
@@ -784,36 +836,48 @@ export const checkAttendanceByPin = onCall({
 ✅ **기존 데이터 구조 수정 없음**
 - `students`, `student_timetables` 등 기존 컬렉션은 그대로 유지
 - 새로운 컬렉션만 추가
+- 기존 `attendance_records` (관리자 체크인/아웃용)와 신규 `student_attendance_records` (학생 출석용) 완전 분리
 
 ✅ **시간표 시스템 연동**
 - `student_timetables`의 `basicSchedule.dailySchedules` 데이터 활용
 - 등원/하원 시간을 시간표에서 자동으로 가져옴
+- 실제 코드의 인터페이스와 100% 일치
 
 ✅ **사용자 데이터 격리**
 - 모든 출석 관련 컬렉션은 `/users/{userId}` 하위에 저장
 - Firestore 보안 규칙에서 `userId` 검증
+- 기존 와일드카드 규칙으로 자동 커버됨
 
-✅ **기존 좌석 시스템과 분리**
-- 기존 `seats`, `seat_assignments`, `seat_layouts`는 다른 용도로 유지
-- 출석 관리용 좌석은 `attendance_classrooms`로 별도 관리
+✅ **기존 좌석 시스템 최대 활용**
+- `seats`, `seat_assignments`, `seat_layouts`: **출석 페이지에서 활용**
+- 기존 구조에 **선택적 필드 추가**로 하위 호환성 유지
+- 이미 구현된 Functions와 컴포넌트 재사용
+- 중복 개발 없이 효율적 구현
+
+✅ **스마트한 확장 전략**
+- 기존 컬렉션에 **optional 필드 추가**로 확장
+- `student_attendance_records`: 학생 출석 기록 (기존 attendance_records와 구분)
+- 신규 컬렉션은 최소화 (PIN, 체크 링크만)
+- 혼동 가능성 완전 제거
 
 ✅ **확장 가능한 설계**
 - 향후 QR 코드, NFC, 생체인식 등 다른 체크인 방법 추가 가능
 - 출석 통계, 보고서, 알림 기능 확장 가능
+- 기존 시스템에 영향 없이 독립적 발전 가능
 
 ---
 
 ## 8. 구현 우선순위
 
 ### Phase 1: 기본 구조 (필수)
-1. `attendance_classrooms` 컬렉션 및 CRUD Functions
-2. `attendance_seat_assignments` 컬렉션 및 할당 Functions
+1. `seat_layouts` 확장 - groups 필드 추가 지원
+2. `seat_assignments` 확장 - studentId, timetableId, expectedSchedule 필드 추가
 3. `attendance_student_pins` 컬렉션 및 PIN 생성 Functions
 4. 시간표 검증 로직 (`validateStudentTimetableForSeat`)
 
 ### Phase 2: 출석 체크 (핵심)
 1. `attendance_check_links` 컬렉션 및 링크 생성 Functions
-2. `attendance_records` 확장 및 PIN 체크 Function (`checkAttendanceByPin`)
+2. `student_attendance_records` 생성 및 PIN 체크 Function (`checkAttendanceByPin`)
 3. 출석/하원 상태 전이 로직
 4. 지각/조퇴 자동 계산
 
@@ -839,8 +903,9 @@ export const checkAttendanceByPin = onCall({
 ### 9.3 성능 최적화
 - 자주 조회되는 데이터는 캐싱 (예: studentName, seatLabel)
 - 복합 인덱스 생성 필요:
-  - `attendance_records`: `(userId, date, studentId)`
+  - `student_attendance_records`: `(userId, date, studentId)`
   - `attendance_seat_assignments`: `(userId, classroomId, status)`
+  - `attendance_student_pins`: `(userId, pin, isActive, isLocked)`
 
 ### 9.4 에러 처리
 - 모든 Functions에서 `HttpsError` 사용
@@ -862,10 +927,29 @@ export const checkAttendanceByPin = onCall({
 
 ## 요약
 
-본 설계는 기존 스터디룸 관리 시스템의 **시간표 시스템**과 완벽하게 연동되며, **사용자 기반 데이터 격리** 원칙을 준수합니다.
-- **학생별 시간표의 등/하원 시간**을 활용하여 자동으로 예정 시간을 설정
-- **PIN 기반 출석/하원 체크**로 간편한 자가 체크인
-- **5가지 출결 상태**로 정확한 출석 관리
-- **유연한 좌석 배치**로 다양한 교실 구조 지원
+본 설계는 기존 스터디룸 관리 시스템과 **100% 호환**되며, **완전히 독립적인 출석 관리 시스템**을 추가합니다.
 
-기존 기능에 영향을 주지 않으면서도 강력한 출석 관리 시스템을 추가할 수 있습니다.
+### 핵심 특징
+- ✅ **완벽한 시간표 연동**: `student_timetables`의 `basicSchedule.dailySchedules` 활용
+- ✅ **명확한 분리**: `student_attendance_records` (학생 출석) ≠ `attendance_records` (관리자)
+- ✅ **기존 시스템 재사용**: `seats`, `seat_layouts`, `seat_assignments` 활용
+- ✅ **하위 호환성 유지**: optional 필드 추가로 기존 기능 영향 없음
+- ✅ **PIN 기반 자가 체크인**: 학생이 직접 등원/하원 기록
+- ✅ **5가지 출결 상태**: 정확한 출석 관리
+- ✅ **유연한 좌석 배치**: 여러 그룹, 커스텀 행×열 지원
+- ✅ **효율적 구현**: 이미 있는 컴포넌트와 Functions 최대 활용
+
+### 호환성 보장
+- ✅ 기존 컬렉션 **확장** (수정 아님, 선택적 필드 추가)
+- ✅ 기존 Functions **재사용** (필요시 확장)
+- ✅ 기존 컴포넌트 **활용** (Classroom, Seat 등)
+- ✅ 하위 호환성 **완벽 유지**
+- ✅ 새로운 페이지로 추가
+
+기존 시스템을 최대한 활용하면서 강력한 출석 관리 기능을 추가할 수 있습니다! 🎉
+
+### 개발 효율성
+- 🚀 **중복 개발 제거**: 좌석 시스템을 새로 만들 필요 없음
+- 🚀 **검증된 코드 활용**: 이미 작동하는 Functions와 컴포넌트 사용
+- 🚀 **빠른 구현**: 출석 로직과 PIN 시스템에만 집중
+- 🚀 **유지보수 간편**: 하나의 좌석 시스템으로 통합 관리
