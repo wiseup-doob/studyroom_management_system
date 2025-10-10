@@ -4,11 +4,12 @@
  */
 
 import { useEffect, useState } from 'react';
-import { collection, query, where, onSnapshot, Timestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { auth } from '../services/firebase';
 import { StudentAttendanceRecord } from '../types/attendance';
 import { convertToStudentAttendanceRecord } from '../utils/attendanceTypeConverters';
+import { getTodayInKorea } from '../utils/dateConverter';
 
 /**
  * 실시간 출석 기록 리스너
@@ -37,19 +38,15 @@ export function useRealtimeAttendanceRecords(seatLayoutId: string | null, enable
     setLoading(true);
     setError(null);
 
-    // 오늘 날짜 범위 계산 (00:00:00 ~ 23:59:59)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    // 오늘 날짜를 YYYY-MM-DD 문자열로 가져옴 (백엔드와 동일한 형식)
+    const todayString = getTodayInKorea();
 
     // Firestore 쿼리 설정
     const recordsRef = collection(db, `users/${user.uid}/student_attendance_records`);
     const q = query(
       recordsRef,
       where('seatLayoutId', '==', seatLayoutId),
-      where('date', '>=', Timestamp.fromDate(today)),
-      where('date', '<', Timestamp.fromDate(tomorrow))
+      where('date', '==', todayString) // 문자열로 비교
     );
 
     // 실시간 리스너 연결

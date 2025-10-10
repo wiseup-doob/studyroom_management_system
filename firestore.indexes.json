@@ -253,6 +253,64 @@
           "order": "ASCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "student_attendance_records",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "date",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "studentId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "sessionNumber",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "student_attendance_records",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "studentId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "date",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isLatestSession",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "student_attendance_records",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "studentId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "date",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isLatestSession",
+          "order": "ASCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": [

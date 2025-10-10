@@ -183,8 +183,8 @@ export function useTodayAttendanceRecords(seatLayoutId: string | null) {
     queryKey: attendanceKeys.todayRecords(seatLayoutId),
     queryFn: () => seatLayoutId ? attendanceService.getTodayAttendanceRecords(seatLayoutId) : Promise.resolve([]),
     enabled: !!seatLayoutId,
-    staleTime: 30 * 1000, // 30초 (출석 기록은 자주 갱신)
-    refetchInterval: 60 * 1000, // 1분마다 자동 refetch
+    staleTime: 10 * 1000, // 10초 (더 자주 갱신)
+    refetchInterval: 30 * 1000, // 30초마다 자동 refetch
   });
 }
 
@@ -226,7 +226,12 @@ export function useManualCheckIn() {
     mutationFn: (data: { studentId: string; seatLayoutId: string; notes?: string }) =>
       attendanceService.manualCheckIn(data),
     onSuccess: (_, variables) => {
+      // 즉시 캐시 무효화 및 refetch
       queryClient.invalidateQueries({ queryKey: attendanceKeys.todayRecords(variables.seatLayoutId) });
+      queryClient.refetchQueries({
+        queryKey: attendanceKeys.todayRecords(variables.seatLayoutId),
+        type: 'active' // 활성화된 쿼리만
+      });
     },
   });
 }
@@ -241,7 +246,12 @@ export function useManualCheckOut() {
     mutationFn: (data: { studentId: string; seatLayoutId: string; notes?: string }) =>
       attendanceService.manualCheckOut(data),
     onSuccess: (_, variables) => {
+      // 즉시 캐시 무효화 및 refetch
       queryClient.invalidateQueries({ queryKey: attendanceKeys.todayRecords(variables.seatLayoutId) });
+      queryClient.refetchQueries({
+        queryKey: attendanceKeys.todayRecords(variables.seatLayoutId),
+        type: 'active' // 활성화된 쿼리만
+      });
     },
   });
 }

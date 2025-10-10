@@ -25,7 +25,8 @@ import {
   CreateAttendanceCheckLinkData,
   UpdateAttendanceStatusData,
   GenerateStudentPinData,
-  UpdateStudentPinData
+  UpdateStudentPinData,
+  MarkStudentAbsentData
 } from '../types/attendance';
 
 class AttendanceService {
@@ -361,6 +362,30 @@ class AttendanceService {
     } catch (error: any) {
       console.error('수동 체크아웃 오류:', error);
       throw new Error(error.message || '체크아웃을 처리하지 못했습니다.');
+    }
+  }
+
+  /**
+   * 학생 결석 처리 (관리자)
+   *
+   * 출석 기록이 없는 미등원 학생을 결석 처리합니다.
+   * - 출석 기록이 없으면 자동으로 생성
+   * - 출석 기록이 있으면 상태 검증 후 업데이트
+   */
+  async markStudentAbsent(data: MarkStudentAbsentData): Promise<{ record: StudentAttendanceRecord }> {
+    try {
+      const result = await this.callFunction('markStudentAbsent', data);
+
+      if (!result.success) {
+        throw new Error(result.message || '결석 처리 실패');
+      }
+
+      return {
+        record: convertTimestampToDate(result.data)
+      };
+    } catch (error: any) {
+      console.error('결석 처리 오류:', error);
+      throw new Error(error.message || '결석 처리를 하지 못했습니다.');
     }
   }
 

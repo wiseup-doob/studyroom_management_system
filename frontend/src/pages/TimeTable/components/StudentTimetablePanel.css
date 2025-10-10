@@ -91,6 +91,25 @@
   background-color: #fef3c7;
 }
 
+.stp-btn-basic-schedule {
+  background: none;
+  border: 1px solid #10b981;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #10b981;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+
+.stp-btn-basic-schedule:hover {
+  background-color: #d1fae5;
+}
+
 .stp-btn-edit-timetable {
   background: none;
   border: 1px solid #333333;

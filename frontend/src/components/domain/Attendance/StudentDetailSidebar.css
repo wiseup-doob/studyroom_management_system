@@ -1,0 +1,338 @@
+/* StudentDetailSidebar.css - 학생 상세 정보 사이드바 스타일 */
+
+/* 사이드바 */
+.sds-sidebar {
+  position: fixed;
+  top: 64px;
+  right: -500px;
+  width: 500px;
+  height: calc(100vh - 64px);
+  background: white;
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  transition: right 0.3s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sds-sidebar.open {
+  right: 0;
+}
+
+/* 헤더 */
+.sds-header {
+  padding: 16px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.sds-close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: color 0.2s;
+}
+
+.sds-close-btn:hover {
+  color: #1e293b;
+}
+
+/* 학생 정보 + 출석 상태 섹션 */
+.sds-info-section {
+  display: flex;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  align-items: center;
+}
+
+.sds-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-size: 20px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sds-info-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sds-name-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.sds-student-name {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.sds-student-grade {
+  margin: 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.sds-status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sds-seat-number {
+  margin-left: auto;
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.sds-status-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.sds-status-badge {
+  padding: 3px 10px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.sds-late-badge {
+  padding: 2px 6px;
+  background: #fef3c7;
+  color: #92400e;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.sds-early-badge {
+  padding: 2px 6px;
+  background: #fee2e2;
+  color: #991b1b;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* 등하원 수동 관리 버튼 */
+.sds-action-buttons {
+  padding: 12px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sds-btn {
+  flex: 1;
+  min-width: 80px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sds-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sds-btn-checkin {
+  background: #10b981; /* checked_in 색상 */
+  color: white;
+}
+
+.sds-btn-checkin:hover:not(:disabled) {
+  background: #059669;
+}
+
+.sds-btn-checkout {
+  background: #6b7280; /* checked_out 색상 */
+  color: white;
+}
+
+.sds-btn-checkout:hover:not(:disabled) {
+  background: #4b5563;
+}
+
+.sds-btn-absent {
+  background: #ef4444; /* absent_unexcused 색상 */
+  color: white;
+}
+
+.sds-btn-absent:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+.sds-btn-excused {
+  background: #f59e0b; /* absent_excused 색상 */
+  color: white;
+}
+
+.sds-btn-excused:hover:not(:disabled) {
+  background: #d97706;
+}
+
+.sds-btn-unexcused {
+  background: #ef4444; /* absent_unexcused 색상 */
+  color: white;
+}
+
+.sds-btn-unexcused:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+.sds-btn-confirm {
+  background: #3b82f6;
+  color: white;
+}
+
+.sds-btn-confirm:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.sds-btn-cancel {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.sds-btn-cancel:hover:not(:disabled) {
+  background: #d1d5db;
+}
+
+.sds-absent-notice {
+  flex: 1;
+  text-align: center;
+  padding: 10px 16px;
+  background: #f3f4f6;
+  color: #6b7280;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sds-excused-input {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sds-reason-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.sds-reason-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.sds-excused-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+/* 탭 */
+.sds-tabs {
+  display: flex;
+  border-bottom: 1px solid #e2e8f0;
+  background: white;
+}
+
+.sds-tab {
+  flex: 1;
+  padding: 16px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sds-tab:hover {
+  color: #3b82f6;
+  background: #f8fafc;
+}
+
+.sds-tab.active {
+  color: #3b82f6;
+  border-bottom-color: #3b82f6;
+}
+
+/* 탭 내용 */
+.sds-tab-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  background: #fafafa;
+}
+
+.sds-timetable-tab,
+.sds-attendance-tab {
+  min-height: 100%;
+}
+
+.sds-placeholder {
+  text-align: center;
+  color: #94a3b8;
+  font-size: 14px;
+  padding: 40px 20px;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .sds-sidebar {
+    width: 100%;
+    right: -100%;
+  }
+}
+
+/* 스크롤바 스타일 */
+.sds-tab-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sds-tab-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.sds-tab-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.sds-tab-content::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

@@ -783,6 +783,10 @@ export const updateSeatLayout = onCall(async (request) => {
 
 /**
  * 좌석 배치도 삭제
+ * 배치도와 관련된 모든 데이터를 함께 삭제합니다:
+ * - seat_assignments (모든 상태)
+ * - student_attendance_records
+ * - attendance_check_links
  */
 export const deleteSeatLayout = onCall(async (request) => {
   if (!request.auth) {
@@ -800,34 +804,75 @@ export const deleteSeatLayout = onCall(async (request) => {
   try {
     const db = admin.firestore();
 
-    // 1. 활성 할당이 있는지 확인
-    const activeAssignments = await db
-      .collection("users")
-      .doc(userId)
-      .collection("seat_assignments")
-      .where("seatLayoutId", "==", seatLayoutId)
-      .where("status", "==", "active")
-      .limit(1)
-      .get();
-
-    if (!activeAssignments.empty) {
-      throw new HttpsError(
-        "failed-precondition",
-        "활성 좌석 할당이 있는 배치도는 삭제할 수 없습니다. 먼저 모든 좌석 할당을 해제하세요."
-      );
-    }
-
-    // 2. 배치도 삭제
-    await db
+    // 1. 배치도 존재 확인
+    const layoutDoc = await db
       .collection("users")
       .doc(userId)
       .collection("seat_layouts")
       .doc(seatLayoutId)
-      .delete();
+      .get();
+
+    if (!layoutDoc.exists) {
+      throw new HttpsError("not-found", "좌석 배치도를 찾을 수 없습니다.");
+    }
+
+    // 2. 관련 데이터 일괄 삭제 (500개씩 청크로 처리)
+
+    // Helper: 문서 배열을 500개씩 나눠서 삭제
+    const deleteInChunks = async (docs: admin.firestore.QueryDocumentSnapshot[]) => {
+      const chunkSize = 500;
+      for (let i = 0; i < docs.length; i += chunkSize) {
+        const chunk = docs.slice(i, i + chunkSize);
+        const chunkBatch = db.batch();
+        chunk.forEach(doc => chunkBatch.delete(doc.ref));
+        await chunkBatch.commit();
+      }
+      return docs.length;
+    };
+
+    // 2-1. 해당 배치도의 모든 좌석 할당 삭제 (모든 상태)
+    const assignmentsSnapshot = await db
+      .collection("users")
+      .doc(userId)
+      .collection("seat_assignments")
+      .where("seatLayoutId", "==", seatLayoutId)
+      .get();
+
+    const deletedAssignments = await deleteInChunks(assignmentsSnapshot.docs);
+
+    // 2-2. 해당 배치도의 출석 기록 삭제
+    const attendanceRecordsSnapshot = await db
+      .collection("users")
+      .doc(userId)
+      .collection("student_attendance_records")
+      .where("seatLayoutId", "==", seatLayoutId)
+      .get();
+
+    const deletedAttendanceRecords = await deleteInChunks(attendanceRecordsSnapshot.docs);
+
+    // 2-3. 해당 배치도의 출석 체크 링크 삭제
+    const checkLinksSnapshot = await db
+      .collection("users")
+      .doc(userId)
+      .collection("attendance_check_links")
+      .where("seatLayoutId", "==", seatLayoutId)
+      .get();
+
+    const deletedCheckLinks = await deleteInChunks(checkLinksSnapshot.docs);
+
+    // 2-4. 배치도 자체 삭제 (별도 배치)
+    const finalBatch = db.batch();
+    finalBatch.delete(layoutDoc.ref);
+    await finalBatch.commit();
 
     return {
       success: true,
-      message: "좌석 배치도가 삭제되었습니다."
+      message: `좌석 배치도와 관련된 데이터가 삭제되었습니다. (삭제된 문서: ${deletedAssignments + deletedAttendanceRecords + deletedCheckLinks + 1}개)`,
+      data: {
+        deletedAssignments,
+        deletedAttendanceRecords,
+        deletedCheckLinks
+      }
     };
   } catch (error) {
     console.error("좌석 배치도 삭제 오류:", error);

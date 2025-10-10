@@ -16,7 +16,6 @@ interface StudentListPanelProps {
   students: StudentWithTimetable[];
   selectedStudent: StudentWithTimetable | null;
   onStudentSelect: (student: StudentWithTimetable) => void;
-  onStudentCreate: () => void;
   onRefresh: () => void;
 }
 
@@ -24,7 +23,6 @@ const StudentListPanel: React.FC<StudentListPanelProps> = ({
   students,
   selectedStudent,
   onStudentSelect,
-  onStudentCreate,
   onRefresh
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -62,12 +60,6 @@ const StudentListPanel: React.FC<StudentListPanelProps> = ({
             title="새로고침"
           >
             🔄
-          </button>
-          <button
-            className="slp-btn-add-student"
-            onClick={onStudentCreate}
-          >
-            + 학생 추가
           </button>
         </div>
       </div>

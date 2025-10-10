@@ -353,6 +353,10 @@ export const updateStudentTimetable = onCall({
 
 /**
  * 학생별 시간표 삭제
+ * 시간표와 관련된 모든 데이터를 함께 삭제합니다:
+ * - seat_assignments의 timetableId 참조 제거
+ * - shared_schedules (해당 시간표의 공유 링크)
+ * - schedule_contributions (해당 시간표의 기여 내역)
  */
 export const deleteStudentTimetable = onCall({
   cors: true
@@ -383,14 +387,73 @@ export const deleteStudentTimetable = onCall({
       throw new HttpsError("not-found", "시간표를 찾을 수 없습니다.");
     }
 
-    // 시간표 삭제
-    await timetableRef.delete();
+    // 관련 데이터 일괄 삭제 (batch 사용)
+    const batch = db.batch();
+    let deleteCount = 0;
+    let updateCount = 0;
 
-    logger.info(`학생 시간표 삭제 성공: ${timetableId}`, { userId });
+    // 1. 해당 시간표를 참조하는 좌석 할당의 timetableId 필드 제거
+    const assignmentsSnapshot = await db
+      .collection("users")
+      .doc(userId)
+      .collection("seat_assignments")
+      .where("timetableId", "==", timetableId)
+      .get();
+
+    assignmentsSnapshot.docs.forEach(doc => {
+      batch.update(doc.ref, {
+        timetableId: FieldValue.delete(),
+        updatedAt: FieldValue.serverTimestamp()
+      });
+      updateCount++;
+    });
+
+    // 2. 해당 시간표의 공유 링크 삭제
+    const sharedSchedulesSnapshot = await db
+      .collection("users")
+      .doc(userId)
+      .collection("shared_schedules")
+      .where("timetableId", "==", timetableId)
+      .get();
+
+    sharedSchedulesSnapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+      deleteCount++;
+    });
+
+    // 3. 해당 시간표의 기여 내역 삭제
+    const contributionsSnapshot = await db
+      .collection("users")
+      .doc(userId)
+      .collection("schedule_contributions")
+      .where("timetableId", "==", timetableId)
+      .get();
+
+    contributionsSnapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+      deleteCount++;
+    });
+
+    // 4. 시간표 삭제
+    batch.delete(timetableRef);
+
+    // 일괄 실행
+    await batch.commit();
+
+    logger.info(`학생 시간표 및 관련 데이터 삭제 성공: ${timetableId}`, {
+      userId,
+      deletedDocs: deleteCount + 1,
+      updatedDocs: updateCount
+    });
 
     return {
       success: true,
-      message: "시간표가 삭제되었습니다."
+      message: `시간표와 관련된 데이터가 삭제되었습니다. (삭제: ${deleteCount + 1}개, 업데이트: ${updateCount}개)`,
+      data: {
+        updatedAssignments: assignmentsSnapshot.size,
+        deletedSharedSchedules: sharedSchedulesSnapshot.size,
+        deletedContributions: contributionsSnapshot.size
+      }
     };
   } catch (error) {
     logger.error("학생 시간표 삭제 실패:", error);

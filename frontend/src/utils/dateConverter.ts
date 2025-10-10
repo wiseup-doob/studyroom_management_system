@@ -112,3 +112,32 @@ export function parseDateString(dateString: string): Date | null {
 export function isValidDate(date: any): date is Date {
   return date instanceof Date && !isNaN(date.getTime());
 }
+
+/**
+ * 오늘 날짜를 YYYY-MM-DD 형식으로 반환 (한국 시간 기준)
+ * 백엔드의 getTodayInKorea()와 동일한 로직
+ *
+ * @returns YYYY-MM-DD 형식의 날짜 문자열
+ *
+ * @example
+ * const today = getTodayInKorea(); // "2025-10-10"
+ */
+export function getTodayInKorea(): string {
+  const now = new Date();
+  const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000)); // UTC+9
+  return koreaTime.toISOString().split("T")[0];
+}
+
+/**
+ * Date 객체를 YYYY-MM-DD 형식 문자열로 변환 (한국 시간 기준)
+ *
+ * @param date - 변환할 Date 객체
+ * @returns YYYY-MM-DD 형식의 날짜 문자열
+ *
+ * @example
+ * const dateString = formatDateToKorea(new Date()); // "2025-10-10"
+ */
+export function formatDateToKorea(date: Date): string {
+  const koreaTime = new Date(date.getTime() + (9 * 60 * 60 * 1000));
+  return koreaTime.toISOString().split("T")[0];
+}

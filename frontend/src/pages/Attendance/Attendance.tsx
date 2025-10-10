@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAttendanceUIStore } from '../../stores/useAttendanceUIStore';
 import {
   useSeatLayouts,
   useSeatAssignments,
   useTodayAttendanceRecords,
   useCreateSeatLayout,
+  useDeleteSeatLayout,
   useAssignSeat,
   useUnassignSeat,
   useGenerateStudentPin,
@@ -13,7 +15,8 @@ import {
   useUpdateAttendanceStatus,
   useAttendanceCheckLinks,
   useCreateAttendanceCheckLink,
-  useDeactivateAttendanceCheckLink
+  useDeactivateAttendanceCheckLink,
+  attendanceKeys
 } from '../../hooks/useAttendanceQueries';
 import SeatingChart from '../../components/domain/Attendance/SeatingChart';
 import SeatLayoutSelector from '../../components/domain/Attendance/SeatLayoutSelector';
@@ -26,6 +29,7 @@ import AttendanceRecordsPanel from '../../components/domain/Attendance/Attendanc
 import AttendanceRecordDetailModal from '../../components/domain/Attendance/AttendanceRecordDetailModal';
 import AttendanceCheckLinkModal from '../../components/domain/Attendance/AttendanceCheckLinkModal';
 import ManageGroupsModal from '../../components/domain/Attendance/ManageGroupsModal';
+import StudentDetailSidebar from '../../components/domain/Attendance/StudentDetailSidebar';
 import { AttendanceStatsSummary, StudentAttendanceRecord, AttendanceCheckLink, SeatLayoutGroup } from '../../types/attendance';
 import { studentService } from '../../services/studentService';
 import attendanceService from '../../services/attendanceService';
@@ -33,6 +37,9 @@ import { Student } from '../../types/student';
 import './Attendance.css';
 
 const Attendance: React.FC = () => {
+  // React Query Client
+  const queryClient = useQueryClient();
+
   // Zustand UI 상태
   const {
     selectedLayoutId,
@@ -49,6 +56,7 @@ const Attendance: React.FC = () => {
   const { data: assignments = [] } = useSeatAssignments(selectedLayoutId);
   const { data: attendanceRecords = [] } = useTodayAttendanceRecords(selectedLayoutId);
   const createLayoutMutation = useCreateSeatLayout();
+  const deleteLayoutMutation = useDeleteSeatLayout();
   const assignSeatMutation = useAssignSeat();
   const unassignSeatMutation = useUnassignSeat();
   const generatePinMutation = useGenerateStudentPin();
@@ -69,6 +77,7 @@ const Attendance: React.FC = () => {
   const [selectedRecord, setSelectedRecord] = useState<StudentAttendanceRecord | null>(null);
   const [isCheckLinkModalOpen, setIsCheckLinkModalOpen] = useState(false);
   const [isManageGroupsModalOpen, setIsManageGroupsModalOpen] = useState(false);
+  const [isStudentDetailOpen, setIsStudentDetailOpen] = useState(false);
 
   // 학생 데이터 로드
   useEffect(() => {
@@ -98,22 +107,40 @@ const Attendance: React.FC = () => {
 
   // 통계 계산
   const stats: AttendanceStatsSummary = useMemo(() => {
+    // 최신 세션만 통계에 포함 (중복 카운트 방지)
+    const latestRecords = attendanceRecords.filter(r => r.isLatestSession);
+
     return {
       totalSeats: selectedLayout?.layout.seats.length || 0,
       assignedSeats: assignments.length,
-      checkedIn: attendanceRecords.filter(r => r.status === 'checked_in').length,
-      checkedOut: attendanceRecords.filter(r => r.status === 'checked_out').length,
-      notArrived: attendanceRecords.filter(r => r.status === 'not_arrived').length,
-      absentExcused: attendanceRecords.filter(r => r.status === 'absent_excused').length,
-      absentUnexcused: attendanceRecords.filter(r => r.status === 'absent_unexcused').length,
-      lateCount: attendanceRecords.filter(r => r.isLate).length,
-      earlyLeaveCount: attendanceRecords.filter(r => r.isEarlyLeave).length
+      checkedIn: latestRecords.filter(r => r.status === 'checked_in').length,
+      checkedOut: latestRecords.filter(r => r.status === 'checked_out').length,
+      notArrived: latestRecords.filter(r => r.status === 'not_arrived').length,
+      absentExcused: latestRecords.filter(r => r.status === 'absent_excused').length,
+      absentUnexcused: latestRecords.filter(r => r.status === 'absent_unexcused').length,
+      lateCount: latestRecords.filter(r => r.isLate).length,
+      earlyLeaveCount: latestRecords.filter(r => r.isEarlyLeave).length
     };
   }, [selectedLayout, assignments, attendanceRecords]);
 
   // 배치도 생성 핸들러
   const handleCreateLayout = async (data: any) => {
     await createLayoutMutation.mutateAsync(data);
+  };
+
+  // 배치도 삭제 핸들러
+  const handleDeleteLayout = async () => {
+    if (!selectedLayoutId) return;
+
+    if (confirm('정말로 이 배치도를 삭제하시겠습니까?\n배치도와 관련된 모든 좌석 할당 및 출석 기록이 삭제됩니다.')) {
+      try {
+        await deleteLayoutMutation.mutateAsync(selectedLayoutId);
+        setSelectedLayoutId(null);
+      } catch (error) {
+        console.error('배치도 삭제 실패:', error);
+        alert('배치도 삭제에 실패했습니다.');
+      }
+    }
   };
 
   // 학생 할당 핸들러
@@ -176,9 +203,16 @@ const Attendance: React.FC = () => {
   // 좌석 클릭 핸들러
   const handleSeatClick = (seatId: string) => {
     setSelectedSeatId(seatId);
-    // 좌석이 선택되면 할당 모달 열기 (할당되지 않은 좌석인 경우)
+
+    // 좌석 할당 정보 찾기
     const assignment = assignments.find(a => a.seatId === seatId);
-    if (!assignment) {
+
+    if (assignment && assignment.studentId) {
+      // 할당된 좌석인 경우: 학생 상세 사이드바 열기
+      // selectedStudentDetail은 useMemo로 자동 계산됨
+      setIsStudentDetailOpen(true);
+    } else {
+      // 할당되지 않은 좌석인 경우: 할당 모달 열기
       setIsAssignModalOpen(true);
     }
   };
@@ -202,6 +236,26 @@ const Attendance: React.FC = () => {
     if (!selectedRecord) return null;
     return students.find(s => s.id === selectedRecord.studentId) || null;
   }, [selectedRecord, students]);
+
+  // 학생 상세 사이드바용 데이터 (실시간 계산)
+  const selectedStudentDetail = useMemo(() => {
+    if (!isStudentDetailOpen || !selectedSeatId) return null;
+
+    const assignment = assignments.find(a => a.seatId === selectedSeatId);
+    if (!assignment?.studentId) return null;
+
+    const student = students.find(s => s.id === assignment.studentId);
+    const record = attendanceRecords.find(r =>
+      r.studentId === assignment.studentId && r.isLatestSession
+    );
+    const seat = selectedLayout?.layout.seats.find(s => s.id === selectedSeatId);
+
+    return student ? {
+      student,
+      record: record || null,
+      seatNumber: seat?.label || assignment.seatNumber || selectedSeatId
+    } : null;
+  }, [isStudentDetailOpen, selectedSeatId, assignments, students, attendanceRecords, selectedLayout]);
 
   // 출석 기록 핸들러
   const handleRecordClick = (record: StudentAttendanceRecord) => {
@@ -352,7 +406,7 @@ const Attendance: React.FC = () => {
   }
 
   return (
-    <div className="attendance-container">
+    <div className={`attendance-container ${isStudentDetailOpen ? 'sidebar-open' : ''}`}>
       {/* 헤더: 제목 + 배치도 선택 드롭다운 */}
       <div className="attendance-header">
         <h1 className="attendance-title">출석 관리</h1>
@@ -410,6 +464,13 @@ const Attendance: React.FC = () => {
                 className="btn btn--secondary"
               >
                 🏗️ 그룹 편집
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteLayout}
+                className="btn btn--danger"
+              >
+                🗑️ 배치도 삭제
               </button>
             </div>
           </div>
@@ -480,6 +541,28 @@ const Attendance: React.FC = () => {
         onClose={() => setIsManageGroupsModalOpen(false)}
         currentGroups={selectedLayout?.layout.groups || []}
         onSave={handleSaveGroups}
+      />
+
+      {/* 학생 상세 사이드바 */}
+      <StudentDetailSidebar
+        isOpen={isStudentDetailOpen}
+        onClose={() => {
+          setIsStudentDetailOpen(false);
+        }}
+        student={selectedStudentDetail?.student || null}
+        todayRecord={selectedStudentDetail?.record || null}
+        seatNumber={selectedStudentDetail?.seatNumber || ''}
+        seatLayoutId={selectedLayoutId}
+        onRecordUpdate={() => {
+          // React Query 캐시 무효화 및 즉시 refetch
+          queryClient.invalidateQueries({
+            queryKey: attendanceKeys.todayRecords(selectedLayoutId)
+          });
+          queryClient.refetchQueries({
+            queryKey: attendanceKeys.todayRecords(selectedLayoutId),
+            type: 'active'
+          });
+        }}
       />
     </div>
   );

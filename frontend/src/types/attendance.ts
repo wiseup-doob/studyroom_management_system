@@ -99,6 +99,8 @@ export interface StudentAttendanceRecord {
   checkInMethod?: 'pin' | 'manual' | 'admin';
   checkOutMethod?: 'pin' | 'manual' | 'admin';
   notes?: string;
+  sessionNumber: number; // 당일 몇 번째 세션인지 (1, 2, 3...)
+  isLatestSession: boolean; // 가장 최신 세션 여부
   createdAt: Date;
   updatedAt: Date;
   recordTimestamp: Date;
@@ -223,6 +225,15 @@ export interface GenerateStudentPinData {
 export interface UpdateStudentPinData {
   studentId: string;
   newPin: string;
+}
+
+// 학생 결석 처리 요청 데이터
+export interface MarkStudentAbsentData {
+  studentId: string;
+  seatLayoutId: string;
+  status: 'absent_excused' | 'absent_unexcused';
+  excusedReason?: string;
+  excusedNote?: string;
 }
 
 // ==================== 통계 타입 ====================

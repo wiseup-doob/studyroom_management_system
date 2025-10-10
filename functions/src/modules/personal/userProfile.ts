@@ -136,8 +136,13 @@ export const deleteUserProfile = onCall(async (request) => {
 
     // 모든 하위 컬렉션 데이터 삭제
     const collections = [
+      "students",
+      "student_timetables",
       "attendance_records",
-      "timetables", 
+      "student_attendance_records",
+      "attendance_student_pins",
+      "attendance_check_links",
+      "timetables",
       "shared_schedules",
       "schedule_contributions",
       "seats",

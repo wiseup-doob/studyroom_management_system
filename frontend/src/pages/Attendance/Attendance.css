@@ -3,6 +3,11 @@
   flex-direction: column;
   height: 100vh;
   background-color: #f8f9fa;
+  transition: margin-right 0.3s ease-in-out;
+}
+
+.attendance-container.sidebar-open {
+  margin-right: 500px;
 }
 
 /* 헤더 */

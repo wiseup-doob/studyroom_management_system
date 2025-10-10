@@ -30,7 +30,8 @@ export const SeatingChart: React.FC<SeatingChartProps> = ({
   const seatingChartSeats: SeatingChartSeat[] = useMemo(() => {
     return layout.layout.seats.map(seat => {
       const assignment = assignments.find(a => a.seatId === seat.id);
-      const record = attendanceRecords.find(r => r.seatId === seat.id);
+      // 최신 세션 기록만 가져오기
+      const record = attendanceRecords.find(r => r.seatId === seat.id && r.isLatestSession);
       const student = assignment?.studentId
         ? students.find(s => s.id === assignment.studentId)
         : undefined;
@@ -71,7 +72,10 @@ export const SeatingChart: React.FC<SeatingChartProps> = ({
       earlyLeaveCount: 0
     };
 
-    attendanceRecords.forEach(record => {
+    // 최신 세션만 통계에 포함 (중복 카운트 방지)
+    const latestRecords = attendanceRecords.filter(r => r.isLatestSession);
+
+    latestRecords.forEach(record => {
       switch (record.status) {
         case 'checked_in':
           summary.checkedIn++;

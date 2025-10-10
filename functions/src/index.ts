@@ -56,6 +56,8 @@ export {
   getEditState,
   updateEditState,
   submitTimetableEdit,
+  getPendingEditSubmissions,
+  processEditSubmission,
   // 편집 잠금 관리 함수들
   createTimetableEditLock,
   releaseTimetableEditLock,
@@ -115,6 +117,10 @@ export {
   deleteStudentTimetable,
   setActiveStudentTimetable,
   autoFillStudentTimetable,
+  updateTimeSlot,
+  deleteTimeSlot,
+  duplicateStudentTimetable,
+  updateBasicSchedule,
 } from "./modules/personal/studentTimetableManagement";
 
 // 학생 출석 관리
@@ -131,9 +137,19 @@ export {
   getAttendanceRecord,
   getStudentPin,
   deactivateAttendanceCheckLink,
+  activateAttendanceCheckLink,
+  deleteAttendanceCheckLink,
   manualCheckIn,
   manualCheckOut,
+  markStudentAbsent,
 } from "./modules/personal/studentAttendanceManagement";
+
+// ==================== Firestore Triggers ====================
+
+// 시간표 업데이트 시 좌석 할당 캐시 자동 동기화
+export {
+  onStudentTimetableUpdate,
+} from "./triggers/onTimetableUpdate";
 
 // ==================== 데이터 마이그레이션 ====================
 // 주의: 일회성 작업용 함수입니다. 사용 후 비활성화하거나 삭제하세요.

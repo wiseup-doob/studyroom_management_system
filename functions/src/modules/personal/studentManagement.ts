@@ -432,14 +432,19 @@ export const updateStudent = onCall({
 });
 
 /**
- * 학생 삭제 (소프트 삭제)
+ * 학생 삭제
+ * 학생과 관련된 모든 데이터를 함께 삭제합니다:
+ * - student_timetables (학생의 모든 시간표)
+ * - seat_assignments (학생의 좌석 할당)
+ * - student_attendance_records (학생의 출석 기록)
+ * - attendance_student_pins (학생의 PIN)
  */
 export const deleteStudent = onCall({
   cors: true
 }, async (request) => {
   try {
     const { auth, data } = request;
-    
+
     if (!auth) {
       throw new HttpsError("unauthenticated", "인증이 필요합니다.");
     }
@@ -463,25 +468,90 @@ export const deleteStudent = onCall({
       throw new HttpsError("not-found", "학생을 찾을 수 없습니다.");
     }
 
-    // 소프트 삭제 (isActive = false)
-    await studentRef.update({
-      isActive: false,
-      updatedAt: FieldValue.serverTimestamp()
+    // 관련 데이터 일괄 삭제 (batch 사용)
+    const batch = db.batch();
+    let deleteCount = 0;
+
+    // 1. 학생의 모든 시간표 삭제
+    const timetablesSnapshot = await db
+      .collection("users")
+      .doc(userId)
+      .collection("student_timetables")
+      .where("studentId", "==", studentId)
+      .get();
+
+    timetablesSnapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+      deleteCount++;
     });
 
-    logger.info(`학생 삭제 성공: ${studentId}`, { userId });
+    // 2. 학생의 모든 좌석 할당 삭제
+    const assignmentsSnapshot = await db
+      .collection("users")
+      .doc(userId)
+      .collection("seat_assignments")
+      .where("studentId", "==", studentId)
+      .get();
+
+    assignmentsSnapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+      deleteCount++;
+    });
+
+    // 3. 학생의 모든 출석 기록 삭제
+    const attendanceRecordsSnapshot = await db
+      .collection("users")
+      .doc(userId)
+      .collection("student_attendance_records")
+      .where("studentId", "==", studentId)
+      .get();
+
+    attendanceRecordsSnapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+      deleteCount++;
+    });
+
+    // 4. 학생의 PIN 삭제
+    const pinsSnapshot = await db
+      .collection("users")
+      .doc(userId)
+      .collection("attendance_student_pins")
+      .where("studentId", "==", studentId)
+      .get();
+
+    pinsSnapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+      deleteCount++;
+    });
+
+    // 5. 학생 문서 삭제
+    batch.delete(studentRef);
+
+    // 일괄 실행
+    await batch.commit();
+
+    logger.info(`학생 및 관련 데이터 삭제 성공: ${studentId}`, {
+      userId,
+      deletedDocs: deleteCount + 1
+    });
 
     return {
       success: true,
-      message: "학생이 삭제되었습니다."
+      message: `학생과 관련된 데이터가 삭제되었습니다. (삭제된 문서: ${deleteCount + 1}개)`,
+      data: {
+        deletedTimetables: timetablesSnapshot.size,
+        deletedAssignments: assignmentsSnapshot.size,
+        deletedAttendanceRecords: attendanceRecordsSnapshot.size,
+        deletedPins: pinsSnapshot.size
+      }
     };
   } catch (error) {
     logger.error("학생 삭제 실패:", error);
-    
+
     if (error instanceof HttpsError) {
       throw error;
     }
-    
+
     throw new HttpsError("internal", "학생 삭제 중 오류가 발생했습니다.");
   }
 });

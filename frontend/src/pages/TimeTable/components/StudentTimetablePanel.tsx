@@ -13,6 +13,7 @@ import { studentTimetableService } from '../../../services/backendService';
 import TimeSlotEditModal from './TimeSlotEditModal';
 import ShareLinkModal from './ShareLinkModal';
 import EditLinkManagementModal from './EditLinkManagementModal';
+import BasicScheduleEditModal from './BasicScheduleEditModal';
 import './StudentTimetablePanel.css';
 
 interface StudentTimetablePanelProps {
@@ -34,6 +35,8 @@ const StudentTimetablePanel: React.FC<StudentTimetablePanelProps> = ({
   const [isShareLinkModalOpen, setIsShareLinkModalOpen] = useState(false);
   // 편집 링크 관리 모달 상태
   const [isEditLinkManagementModalOpen, setIsEditLinkManagementModalOpen] = useState(false);
+  // 등하원 시간 편집 모달 상태
+  const [isBasicScheduleModalOpen, setIsBasicScheduleModalOpen] = useState(false);
 
   // 시간표 편집 모달 열기
   const handleEditTimetable = () => {
@@ -63,6 +66,43 @@ const StudentTimetablePanel: React.FC<StudentTimetablePanelProps> = ({
   // 편집 링크 관리 모달 닫기
   const closeEditLinkManagementModal = () => {
     setIsEditLinkManagementModalOpen(false);
+  };
+
+  // 등하원 시간 편집 모달 열기
+  const handleBasicScheduleEdit = () => {
+    setIsBasicScheduleModalOpen(true);
+  };
+
+  // 등하원 시간 편집 모달 닫기
+  const closeBasicScheduleModal = () => {
+    setIsBasicScheduleModalOpen(false);
+  };
+
+  // 등하원 시간 저장 핸들러
+  const handleBasicScheduleSave = async (updatedSchedule: any) => {
+    if (!timetable) return;
+
+    try {
+      await studentTimetableService.updateStudentTimetable(timetable.id, {
+        basicSchedule: {
+          ...timetable.basicSchedule,
+          dailySchedules: updatedSchedule
+        }
+      });
+
+      // 시간표 업데이트
+      const updatedTimetable = {
+        ...timetable,
+        basicSchedule: {
+          ...timetable.basicSchedule,
+          dailySchedules: updatedSchedule
+        }
+      };
+      onTimetableUpdate(updatedTimetable);
+    } catch (error) {
+      console.error('등하원 시간 저장 실패:', error);
+      throw error;
+    }
   };
 
   // 수업 추가 핸들러
@@ -301,18 +341,18 @@ const StudentTimetablePanel: React.FC<StudentTimetablePanelProps> = ({
             ⚙️ 링크 관리
           </button>
           <button
+            className="stp-btn-basic-schedule"
+            onClick={handleBasicScheduleEdit}
+            title="등하원 시간 편집"
+          >
+            🕐 등하원 시간 편집
+          </button>
+          <button
             className="stp-btn-edit-timetable"
             onClick={handleEditTimetable}
             title="시간표 편집"
           >
             ✏️ 시간표 편집
-          </button>
-          <button
-            className="stp-btn-refresh"
-            onClick={() => window.location.reload()}
-            title="새로고침"
-          >
-            🔄
           </button>
         </div>
       </div>
@@ -423,6 +463,17 @@ const StudentTimetablePanel: React.FC<StudentTimetablePanelProps> = ({
         studentId={student.id}
         studentName={student.name}
       />
+
+      {/* BasicScheduleEditModal */}
+      {isBasicScheduleModalOpen && timetable && (
+        <BasicScheduleEditModal
+          isOpen={isBasicScheduleModalOpen}
+          onClose={closeBasicScheduleModal}
+          onSave={handleBasicScheduleSave}
+          currentSchedule={timetable.basicSchedule.dailySchedules}
+          studentName={student.name}
+        />
+      )}
     </div>
   );
 };

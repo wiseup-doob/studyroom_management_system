@@ -159,7 +159,6 @@ const TimeTable: React.FC = () => {
           students={students}
           selectedStudent={selectedStudent}
           onStudentSelect={handleStudentSelect}
-          onStudentCreate={() => {}}
           onRefresh={loadStudentsWithTimetables}
         />
       </div>
