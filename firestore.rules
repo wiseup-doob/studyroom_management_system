@@ -15,12 +15,6 @@ service cloud.firestore {
           request.auth.uid == userId;
       }
 
-      // 시간표 - 해당 사용자만 접근 가능
-      match /timetables/{timetableId} {
-        allow read, write: if request.auth != null &&
-          request.auth.uid == userId;
-      }
-
       // 좌석 배정 - 해당 사용자만 접근 가능
       match /seat_assignments/{assignmentId} {
         allow read, write: if request.auth != null &&
@@ -72,6 +66,28 @@ service cloud.firestore {
 
       // 기여 데이터 - 해당 사용자만 접근 가능
       match /schedule_contributions/{contributionId} {
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
+      }
+
+      // 학생 PIN - 해당 사용자만 접근 가능 (pinHash는 외부 노출 금지)
+      match /student_pins/{pinId} {
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
+      }
+
+      // 출석 체크 링크 - 해당 사용자만 관리, linkToken은 공개 읽기 가능
+      match /attendance_check_links/{linkId} {
+        // 사용자는 본인 링크 읽기/쓰기 가능
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
+
+        // linkToken 검증을 위한 공개 읽기 (특정 필드만)
+        allow get: if resource.data.isActive == true;
+      }
+
+      // 학생 출석 기록 - 해당 사용자만 접근 가능
+      match /student_attendance_records/{recordId} {
         allow read, write: if request.auth != null &&
           request.auth.uid == userId;
       }

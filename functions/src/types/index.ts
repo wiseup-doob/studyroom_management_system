@@ -277,11 +277,15 @@ export interface Student {
   name: string;
   email: string;
   grade: string;
+  school?: string;
   phone?: string;
   parentName?: string;
   parentPhone?: string;
   address?: string;
-  isActive: boolean;
+  status: "active" | "withdrawn";
+  enrollmentDate: FirebaseFirestore.Timestamp;
+  withdrawalDate?: FirebaseFirestore.Timestamp;
+  isActive: boolean; // 하위 호환성
   createdAt: FirebaseFirestore.Timestamp;
   updatedAt: FirebaseFirestore.Timestamp;
   userId: string;
@@ -352,20 +356,26 @@ export interface CreateStudentRequest {
   name: string;
   email: string;
   grade: string;
+  school?: string;
   phone?: string;
   parentName?: string;
   parentPhone?: string;
   address?: string;
+  enrollmentDate?: FirebaseFirestore.Timestamp;
 }
 
 export interface UpdateStudentRequest {
   name?: string;
   email?: string;
   grade?: string;
+  school?: string;
   phone?: string;
   parentName?: string;
   parentPhone?: string;
   address?: string;
+  status?: "active" | "withdrawn";
+  enrollmentDate?: FirebaseFirestore.Timestamp;
+  withdrawalDate?: FirebaseFirestore.Timestamp;
 }
 
 export interface SearchStudentsRequest {

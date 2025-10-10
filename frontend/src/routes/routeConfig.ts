@@ -6,6 +6,7 @@ export const ROUTES = {
   HOME: '/home',
   STUDENT: '/student',
   TIMETABLE: '/timetable',
+  ATTENDANCE: '/attendance',
 } as const;
 
 // 라우트 메타데이터

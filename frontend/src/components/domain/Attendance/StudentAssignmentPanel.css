@@ -1,0 +1,263 @@
+/* StudentAssignmentPanel 스타일 */
+
+.student-assignment-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* 헤더 */
+.assignment-panel__header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.assignment-panel__title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #2d3748;
+}
+
+.assignment-panel__hint {
+  font-size: 0.85rem;
+  color: #718096;
+}
+
+/* 검색 영역 */
+.assignment-panel__search {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.assignment-panel__search-hint {
+  font-size: 0.8rem;
+  color: #e53e3e;
+  padding: 8px;
+  background-color: #fff5f5;
+  border-radius: 4px;
+  text-align: center;
+}
+
+/* 섹션 */
+.assignment-panel__section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.assignment-panel__section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.assignment-panel__section-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.assignment-panel__count {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #3182ce;
+  background-color: #ebf8ff;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+/* 할당된 학생 목록 */
+.assigned-students-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.assigned-students-list--empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.empty-state__icon {
+  font-size: 3rem;
+  margin-bottom: 8px;
+  opacity: 0.5;
+}
+
+.empty-state__text {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #4a5568;
+  margin-bottom: 4px;
+}
+
+.empty-state__hint {
+  font-size: 0.85rem;
+  color: #718096;
+}
+
+/* 할당된 학생 카드 */
+.assigned-student-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  background-color: #f7fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.assigned-student-card:hover {
+  background-color: #edf2f7;
+  border-color: #cbd5e0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.assigned-student-card__info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.assigned-student-card__name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.assigned-student-card__details {
+  display: flex;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: #718096;
+}
+
+.assigned-student-card__seat {
+  font-weight: 500;
+  color: #3182ce;
+}
+
+.assigned-student-card__grade {
+  color: #718096;
+}
+
+.assigned-student-card__pin-status {
+  margin-top: 4px;
+}
+
+.pin-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.pin-badge--locked {
+  background-color: #fff5f5;
+  color: #e53e3e;
+}
+
+.pin-badge--active {
+  background-color: #f0fff4;
+  color: #38a169;
+}
+
+/* 액션 버튼 */
+.assigned-student-card__actions {
+  display: flex;
+  gap: 4px;
+}
+
+.btn-icon {
+  padding: 6px 8px;
+  border: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 1rem;
+}
+
+.btn-icon:hover {
+  background-color: #f7fafc;
+  border-color: #cbd5e0;
+}
+
+.btn-icon--danger {
+  color: #e53e3e;
+}
+
+.btn-icon--danger:hover {
+  background-color: #fff5f5;
+  border-color: #fc8181;
+}
+
+/* 통계 */
+.assignment-panel__stats {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  background-color: #f7fafc;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.stat-item {
+  display: flex;
+  gap: 4px;
+  font-size: 0.85rem;
+}
+
+.stat-item__label {
+  color: #718096;
+  font-weight: 500;
+}
+
+.stat-item__value {
+  color: #2d3748;
+  font-weight: 700;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .student-assignment-panel {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .assignment-panel__title {
+    font-size: 1.1rem;
+  }
+
+  .assigned-student-card {
+    padding: 10px;
+  }
+
+  .assigned-student-card__name {
+    font-size: 0.9rem;
+  }
+}

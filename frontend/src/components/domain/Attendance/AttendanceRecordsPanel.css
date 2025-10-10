@@ -1,0 +1,324 @@
+/* AttendanceRecordsPanel 스타일 */
+
+.attendance-records-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* 헤더 */
+.records-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.records-panel__title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #2d3748;
+}
+
+.records-panel__count {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #3182ce;
+  background-color: #ebf8ff;
+  padding: 4px 12px;
+  border-radius: 12px;
+}
+
+/* 상태 필터 탭 */
+.status-filter-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.filter-tab {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4a5568;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.filter-tab:hover {
+  background-color: #f7fafc;
+  border-color: #cbd5e0;
+}
+
+.filter-tab--active {
+  background-color: #3182ce;
+  color: white;
+  border-color: #3182ce;
+}
+
+.filter-tab__count {
+  font-size: 0.8rem;
+  padding: 2px 6px;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.filter-tab--active .filter-tab__count {
+  background-color: rgba(255, 255, 255, 0.25);
+}
+
+/* 출석 기록 목록 */
+.records-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.records-list__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  gap: 12px;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #3182ce;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: 0.9rem;
+  color: #718096;
+}
+
+.records-list--empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.empty-state__icon {
+  font-size: 3rem;
+  margin-bottom: 8px;
+  opacity: 0.5;
+}
+
+.empty-state__text {
+  font-size: 0.95rem;
+  color: #4a5568;
+}
+
+/* 출석 기록 카드 */
+.record-card {
+  padding: 14px;
+  background-color: #f7fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.record-card:hover {
+  background-color: #edf2f7;
+  border-color: #cbd5e0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.record-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.record-card__student {
+  flex: 1;
+}
+
+.student-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 2px;
+}
+
+.student-details {
+  font-size: 0.8rem;
+  color: #718096;
+}
+
+/* 상태 뱃지 */
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-badge--checked-in {
+  background-color: #c6f6d5;
+  color: #22543d;
+}
+
+.status-badge--checked-out {
+  background-color: #e2e8f0;
+  color: #2d3748;
+}
+
+.status-badge--late {
+  background-color: #fef5e7;
+  color: #c05621;
+}
+
+.status-badge--absent {
+  background-color: #fff5f5;
+  color: #c53030;
+}
+
+.status-badge--unknown {
+  background-color: #f7fafc;
+  color: #718096;
+}
+
+/* 시간 정보 */
+.record-card__times {
+  display: flex;
+  gap: 12px;
+  font-size: 0.85rem;
+}
+
+.time-item {
+  display: flex;
+  gap: 4px;
+}
+
+.time-item__label {
+  color: #718096;
+  font-weight: 500;
+}
+
+.time-item__value {
+  color: #2d3748;
+  font-weight: 600;
+}
+
+/* 사유 메모 */
+.record-card__note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background-color: #fffaf0;
+  border-left: 3px solid #ed8936;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.note-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.note-text {
+  color: #744210;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+/* 플래그 */
+.record-card__flags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.flag {
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.flag--late {
+  background-color: #fef5e7;
+  color: #c05621;
+  border: 1px solid #f6ad55;
+}
+
+.flag--early-leave {
+  background-color: #e6fffa;
+  color: #234e52;
+  border: 1px solid #81e6d9;
+}
+
+.flag--excused {
+  background-color: #ebf8ff;
+  color: #2c5282;
+  border: 1px solid #90cdf4;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .attendance-records-panel {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .records-panel__title {
+    font-size: 1.1rem;
+  }
+
+  .status-filter-tabs {
+    gap: 4px;
+  }
+
+  .filter-tab {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+
+  .record-card {
+    padding: 12px;
+  }
+
+  .student-name {
+    font-size: 0.9rem;
+  }
+}

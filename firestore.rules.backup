@@ -1,0 +1,85 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 사용자 기반 데이터 격리 - 로그인한 계정별로 데이터 분리
+
+    // 사용자별 데이터 - uid 기반 격리
+    match /users/{userId} {
+      // 사용자는 본인 데이터만 접근 가능
+      allow read, write: if request.auth != null &&
+        request.auth.uid == userId;
+
+      // 출석 기록 - 해당 사용자만 접근 가능
+      match /attendance_records/{recordId} {
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
+      }
+
+      // 좌석 배정 - 해당 사용자만 접근 가능
+      match /seat_assignments/{assignmentId} {
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
+      }
+
+      // 좌석 정보 - 해당 사용자만 접근 가능
+      match /seats/{seatId} {
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
+      }
+
+      // 학급 정보 - 해당 사용자만 접근 가능
+      match /class_sections/{sectionId} {
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
+      }
+
+      // 출석 요약 - 해당 사용자만 접근 가능
+      match /attendance_summaries/{summaryId} {
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
+      }
+
+      // 좌석 배치도 - 해당 사용자만 접근 가능
+      match /seat_layouts/{layoutId} {
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
+      }
+
+      // 설정 - 해당 사용자만 접근 가능
+      match /settings/{settingId} {
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
+      }
+
+
+      // 학생 정보 - 해당 사용자만 접근 가능
+      match /students/{studentId} {
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
+      }
+
+      // 학생별 시간표 - 해당 사용자만 접근 가능
+      match /student_timetables/{timetableId} {
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
+      }
+
+      // 기여 데이터 - 해당 사용자만 접근 가능
+      match /schedule_contributions/{contributionId} {
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
+      }
+
+      // 기타 하위 컬렉션 - 기본 권한 적용
+      match /{subCollection}/{docId} {
+        allow read, write: if request.auth != null &&
+          request.auth.uid == userId;
+      }
+    }
+
+    // 루트 레벨 컬렉션 접근 차단 (보안 강화)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

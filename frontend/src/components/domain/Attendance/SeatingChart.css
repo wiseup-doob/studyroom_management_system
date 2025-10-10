@@ -66,6 +66,15 @@
   color: #718096;
 }
 
+/* 그룹 컨테이너 */
+.seating-chart__groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+
 /* 좌석 그리드 */
 .seating-chart__grid {
   display: grid;

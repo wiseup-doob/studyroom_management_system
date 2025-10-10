@@ -213,6 +213,12 @@
   box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
 }
 
+.form-group input.input-disabled {
+  background-color: #f5f5f5;
+  color: #999;
+  cursor: not-allowed;
+}
+
 .form-actions {
   display: flex;
   gap: 1rem;
@@ -296,10 +302,35 @@
   transform: translateY(-2px);
 }
 
+.student-info .student-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
 .student-info h3 {
-  margin: 0 0 0.5rem 0;
+  margin: 0;
   color: #333;
   font-size: 1.25rem;
+}
+
+.student-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.student-status--active {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.student-status--withdrawn {
+  background: #ffebee;
+  color: #c62828;
 }
 
 .student-grade {
@@ -315,10 +346,28 @@
 
 .student-email,
 .student-phone,
-.student-parent {
+.student-parent,
+.student-enrollment-date,
+.student-withdrawal-date,
+.student-school {
   margin: 0.25rem 0;
   color: #666;
   font-size: 0.9rem;
+}
+
+.student-enrollment-date {
+  color: #2e7d32;
+  font-weight: 500;
+}
+
+.student-withdrawal-date {
+  color: #c62828;
+  font-weight: 500;
+}
+
+.student-card--withdrawn {
+  opacity: 0.7;
+  background: #fafafa;
 }
 
 .student-actions {

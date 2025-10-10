@@ -1,8 +1,10 @@
 /**
  * editLinkService.ts - 편집 링크 관리 서비스
- * 
+ *
  * 편집 링크의 생성, 조회, 관리, 로그 추적 기능을 제공합니다.
  */
+
+import { convertTimestampToDate } from '../utils/dateConverter';
 
 // backendService는 현재 사용하지 않음 (직접 fetch 사용)
 
@@ -293,7 +295,7 @@ class EditLinkService {
     
     if (link.expiresAt) {
       const now = new Date();
-      const expiresAt = link.expiresAt.toDate ? link.expiresAt.toDate() : new Date(link.expiresAt);
+      const expiresAt = convertTimestampToDate(link.expiresAt);
       if (expiresAt < now) {
         return '만료됨';
       }
@@ -312,7 +314,7 @@ class EditLinkService {
     
     if (link.expiresAt) {
       const now = new Date();
-      const expiresAt = link.expiresAt.toDate ? link.expiresAt.toDate() : new Date(link.expiresAt);
+      const expiresAt = convertTimestampToDate(link.expiresAt);
       if (expiresAt < now) {
         return '#f59e0b'; // 주황색
       }
@@ -326,8 +328,8 @@ class EditLinkService {
    */
   formatDate(timestamp: any): string {
     if (!timestamp) return '-';
-    
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+
+    const date = convertTimestampToDate(timestamp);
     return date.toLocaleString('ko-KR', {
       year: 'numeric',
       month: '2-digit',

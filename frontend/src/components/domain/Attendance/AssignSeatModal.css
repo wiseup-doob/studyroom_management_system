@@ -1,0 +1,355 @@
+/* AssignSeatModal 스타일 */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 헤더 */
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2d3748;
+}
+
+.modal-close {
+  padding: 4px 8px;
+  border: none;
+  background: none;
+  font-size: 1.5rem;
+  color: #718096;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-radius: 6px;
+}
+
+.modal-close:hover {
+  background-color: #f7fafc;
+  color: #2d3748;
+}
+
+/* 바디 */
+.modal-body {
+  flex: 1;
+  padding: 20px 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 좌석 정보 박스 */
+.seat-info-box {
+  padding: 12px 16px;
+  background-color: #ebf8ff;
+  border: 1px solid #90cdf4;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.seat-info-box__label {
+  font-size: 0.9rem;
+  color: #2c5282;
+  font-weight: 500;
+}
+
+.seat-info-box__value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #2b6cb0;
+}
+
+/* 에러 메시지 */
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background-color: #fff5f5;
+  border: 1px solid #fc8181;
+  border-radius: 8px;
+}
+
+.error-message__icon {
+  font-size: 1.2rem;
+}
+
+.error-message__text {
+  flex: 1;
+  font-size: 0.9rem;
+  color: #c53030;
+  font-weight: 500;
+}
+
+/* 폼 그룹 */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.form-input {
+  padding: 10px 12px;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #3182ce;
+  box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+}
+
+/* 학생 목록 */
+.student-list {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background-color: #f7fafc;
+}
+
+.student-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  background-color: #ffffff;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.student-item:hover {
+  border-color: #cbd5e0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.student-item--selected {
+  background-color: #ebf8ff;
+  border-color: #3182ce;
+}
+
+.student-item__info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.student-item__name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.student-item__details {
+  display: flex;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: #718096;
+}
+
+.student-item__grade {
+  font-weight: 500;
+  color: #4a5568;
+}
+
+.student-item__email {
+  color: #718096;
+}
+
+.student-item__check {
+  font-size: 1.2rem;
+  color: #3182ce;
+  font-weight: bold;
+}
+
+.student-list--empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 3rem;
+  margin-bottom: 8px;
+  opacity: 0.5;
+}
+
+.empty-text {
+  font-size: 0.9rem;
+  color: #718096;
+}
+
+/* 선택된 학생 미리보기 */
+.selected-student-preview {
+  padding: 16px;
+  background-color: #f0fff4;
+  border: 1px solid #9ae6b4;
+  border-radius: 8px;
+}
+
+.preview-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #22543d;
+  margin-bottom: 8px;
+}
+
+.preview-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.preview-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #276749;
+}
+
+.preview-details {
+  font-size: 0.85rem;
+  color: #2f855a;
+}
+
+.preview-timetable {
+  margin-top: 8px;
+  padding: 8px;
+  background-color: #c6f6d5;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  color: #22543d;
+  font-weight: 500;
+}
+
+.preview-warning {
+  margin-top: 8px;
+  padding: 8px;
+  background-color: #fef5e7;
+  border: 1px solid #f6ad55;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  color: #c05621;
+  font-weight: 500;
+}
+
+/* 푸터 */
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 2px solid #e2e8f0;
+  background-color: #f7fafc;
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn--primary {
+  background-color: #3182ce;
+  color: white;
+}
+
+.btn--primary:hover:not(:disabled) {
+  background-color: #2c5282;
+}
+
+.btn--secondary {
+  background-color: #e2e8f0;
+  color: #2d3748;
+}
+
+.btn--secondary:hover:not(:disabled) {
+  background-color: #cbd5e0;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .modal-overlay {
+    padding: 12px;
+  }
+
+  .modal-content {
+    max-width: 100%;
+  }
+
+  .modal-header {
+    padding: 16px;
+  }
+
+  .modal-title {
+    font-size: 1.25rem;
+  }
+
+  .modal-body {
+    padding: 16px;
+  }
+
+  .student-list {
+    max-height: 240px;
+  }
+}

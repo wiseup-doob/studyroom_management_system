@@ -59,7 +59,10 @@ firebase deploy --only functions  # Deploy backend only
 - **React 19** with TypeScript and Vite 7+
 - **Path aliases**: `@/*` maps to `src/*`
 - **Routing**: React Router DOM v7+ with authentication-based protected routes
-- **State Management**: React Context for authentication
+- **State Management**:
+  - React Context for authentication
+  - Zustand for UI state (attendance UI store)
+  - TanStack Query (React Query) for server state management
 - **Firebase Integration**: Auth, Firestore, Functions
 - **Development server**: Runs on port 3000 with auto-open browser
 
@@ -89,17 +92,23 @@ firebase deploy --only functions  # Deploy backend only
 - `index.ts`: Main type exports
 
 ### Component Structure
-- **Layout components**: `MainLayout.tsx`, `MainHeader.tsx` in `components/layout/`
+- **Layout components**: `MainLayout.tsx`, `MainHeader.tsx`, `Sidebar.tsx` in `components/Layout/` or `components/common/Sidebar/`
   - MainLayout includes sidebar and main content areas
   - MainHeader provides navigation and user profile
+  - Sidebar provides navigation menu
 - **Domain components**: Specialized components in `components/domain/Attendance/`
-  - `StudentSearch.tsx` for attendance search functionality
-- **Notifications**: User notification system in `components/notifications/`
+  - Comprehensive attendance UI components (SeatingChart, Seat, AssignSeatModal, etc.)
+  - Student assignment and PIN management panels
+  - Attendance records and statistics components
+- **Common components**: Reusable UI components in `components/common/`
 - **Buttons**: Reusable button components in `components/buttons/`
 
-**Note**: Several component directories have been removed:
-- ❌ `components/security/ErrorHandler` - Removed
-- ❌ `components/common/` - Integrated into layout components
+### Custom Hooks (`frontend/src/hooks/`)
+- `useAttendanceQueries.ts`: TanStack Query hooks for attendance data
+- `useRealtimeAttendance.ts`: Real-time Firestore subscription for attendance
+
+### State Management (`frontend/src/stores/`)
+- `useAttendanceUIStore.ts`: Zustand store for attendance UI state
 
 ### Current Pages (`frontend/src/pages/`)
 - **Home**: Main dashboard and entry point
@@ -110,12 +119,14 @@ firebase deploy --only functions  # Deploy backend only
   - Student list panel, basic schedule panel, student timetable panel
   - Time slot editing and timetable creation modals
 - **StudentTimetableSharedEdit**: Shared student timetable editing functionality
+- **Attendance**: Student attendance management with seat layouts and PIN-based check-in (active development)
 - **SubmissionComplete**: Submission completion confirmation page
 
 ### Backend Architecture (`functions/src/`)
 - **Personal modules**: User-specific functionality in `modules/personal/`
   - `userProfile.ts`: User profile management and data backup
-  - `attendanceManagement.ts`: Check-in/out and attendance tracking
+  - `attendanceManagement.ts`: Check-in/out and attendance tracking (admin self-check)
+  - `studentAttendanceManagement.ts`: **NEW** - Student attendance system with PIN-based check-in/out
   - `shareScheduleManagement.ts`: Schedule sharing and collaboration
   - `seatManagement.ts`: Seat assignment and layout management
   - `settingsManagement.ts`: User settings and preferences
@@ -164,11 +175,16 @@ Each environment file needs:
 - **Data Structure**: Firestore structure uses `/users/{userId}` for complete user data isolation
 - **Error Handling**: Built into component-level error boundaries and service-level error management
 - **Testing**: Firebase emulators required for local development - no formal testing framework currently configured
-- **Attendance System**: User-specific attendance tracking and management
-- **CSS Modules**: Component-scoped styling with CSS files alongside components
+- **State Management**:
+  - TanStack Query for server state, caching, and mutations
+  - Zustand for client-side UI state
+  - Real-time subscriptions via custom hooks
+- **CSS**: Component-scoped styling with CSS files alongside components
 - **Build**: Vite with code splitting (vendor, firebase, router bundles), source maps enabled
 - **Development**: Auto-open browser on port 3000, hot module replacement
-- **Current State**: Architecture stabilized with user-based data isolation, new features being added
+- **QR Codes**: Uses `qrcode.react` library for generating QR codes (attendance check links)
+- **Icons**: Uses `@heroicons/react` for UI icons
+- **Current State**: Core features stable, attendance system in active development
 
 ## Current Development Focus
 
@@ -177,8 +193,29 @@ The system is a personal user-based management system:
 - **Personal Management**: Each authenticated user manages their own students, schedules, and attendance
 - **Data Isolation**: Complete separation of data between users using Firestore security rules
 - **User-Centric Architecture**: Direct user ownership of all data and operations
-- **Active Features**: Student management, timetable functionality, and shared timetable editing
+- **Active Features**: Student management, timetable functionality, shared timetable editing, and **student attendance system (in development)**
 - **Backend Integration**: Comprehensive Firebase Functions for all user operations
+
+### Attendance System (Active Development)
+
+A comprehensive student attendance management system with the following features:
+- **PIN-based Check-in/out**: Students use unique 4-6 digit PINs for self-service attendance
+- **Seat Layout Integration**: Visual seat management with group-based layouts (rows × columns)
+- **Attendance Tracking**: Automated tracking of arrival/departure times with late/early-leave detection
+- **Timetable Integration**: Uses `student_timetables.basicSchedule.dailySchedules` for expected times
+- **Security**: bcrypt hashing for PINs, automatic locking after 5 failed attempts
+- **Real-time Updates**: Live attendance status using Firestore subscriptions
+- **Design Document**: See `ATTENDANCE_DATABASE_DESIGN.md` for complete system architecture
+- **Implementation Plans**: See `ATTENDANCE_FRONTEND_IMPLEMENTATION_PLAN.md` and `ATTENDANCE_INTEGRATION_PLAN.md`
+
+**Key Collections** (all under `/users/{userId}/`):
+- `student_attendance_records`: Daily attendance records with 5 status types
+- `attendance_check_links`: Shareable links with UUID tokens for PIN entry
+- `attendance_student_pins`: Hashed student PINs with security features
+- `seat_layouts`: Extended with optional `groups` field for attendance layouts
+- `seat_assignments`: Extended with student info and expected schedules
+
+**Current Status**: Phase 1-3 deployment completed, see `PHASE_1_2_3_DEPLOYMENT_SUMMARY.md` for details
 
 ## Build Process
 
@@ -191,15 +228,18 @@ The system follows a user-based data isolation architecture documented in `DATAB
 **Collections**:
 1. `users` - Root collection with user profiles (Google Auth)
 2. `users/{userId}/students` - Student records (managed by each user)
-3. `users/{userId}/attendance_records` - Attendance tracking
-4. `users/{userId}/timetables` - 2-layer timetable system (arrival/departure + detailed schedule)
-5. `users/{userId}/shared_schedules` - Timetable sharing links
-6. `users/{userId}/schedule_contributions` - External schedule contributions
-7. `users/{userId}/seats` - Seat information
-8. `users/{userId}/seat_assignments` - Seat assignments
-9. `users/{userId}/seat_layouts` - Seat layout configurations
-10. `users/{userId}/class_sections` - Class information
-11. `users/{userId}/attendance_summaries` - Attendance statistics
-12. `users/{userId}/settings` - User preferences
+3. `users/{userId}/student_timetables` - Student-specific timetables with 2-layer system
+4. `users/{userId}/attendance_records` - Admin self check-in/out tracking
+5. `users/{userId}/student_attendance_records` - **NEW** Student attendance tracking (separate from admin)
+6. `users/{userId}/attendance_check_links` - **NEW** Shareable PIN entry links
+7. `users/{userId}/attendance_student_pins` - **NEW** Hashed student PINs
+8. `users/{userId}/shared_schedules` - Timetable sharing links
+9. `users/{userId}/schedule_contributions` - External schedule contributions
+10. `users/{userId}/seats` - Seat information
+11. `users/{userId}/seat_assignments` - Seat assignments (extended for students)
+12. `users/{userId}/seat_layouts` - Seat layout configurations (extended with groups)
+13. `users/{userId}/class_sections` - Class information
+14. `users/{userId}/attendance_summaries` - Attendance statistics
+15. `users/{userId}/settings` - User preferences
 
-**Student Timetables**: The system supports both basic user timetables and individual student timetables, allowing users to manage schedules for multiple students.
+**Student Timetables**: The system supports both basic user timetables and individual student timetables. The `basicSchedule.dailySchedules` structure provides arrival/departure times used by the attendance system for automated late/early-leave detection.

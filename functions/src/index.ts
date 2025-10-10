@@ -79,6 +79,10 @@ export {
   createSeatLayout,
   getSeatLayouts,
   getCurrentSeatAssignment,
+  validateStudentTimetableForSeat,
+  getSeatAssignments,
+  updateSeatLayout,
+  deleteSeatLayout,
 } from "./modules/personal/seatManagement";
 
 // 설정 관리
@@ -112,3 +116,28 @@ export {
   setActiveStudentTimetable,
   autoFillStudentTimetable,
 } from "./modules/personal/studentTimetableManagement";
+
+// 학생 출석 관리
+export {
+  generateStudentPin,
+  updateStudentPin,
+  unlockStudentPin,
+  createAttendanceCheckLink,
+  getAttendanceCheckLinks,
+  checkAttendanceByPin,
+  getStudentAttendanceRecords,
+  updateAttendanceStatus,
+  getTodayAttendanceRecords,
+  getAttendanceRecord,
+  getStudentPin,
+  deactivateAttendanceCheckLink,
+  manualCheckIn,
+  manualCheckOut,
+} from "./modules/personal/studentAttendanceManagement";
+
+// ==================== 데이터 마이그레이션 ====================
+// 주의: 일회성 작업용 함수입니다. 사용 후 비활성화하거나 삭제하세요.
+export {
+  migrateStudentEnrollmentDates,
+  migrateAllUsersEnrollmentDates,
+} from "./modules/admin/dataMigration";

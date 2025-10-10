@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { backendService } from '../../services/backendService';
+import StudentPinManagement from '../../components/domain/Student/StudentPinManagement';
 import type { Student, CreateStudentRequest } from '../../types/student';
 import './Student.css';
 
@@ -18,6 +19,7 @@ const Student: React.FC = () => {
     name: '',
     email: '',
     grade: '',
+    school: '',
     phone: '',
     parentName: '',
     parentPhone: '',
@@ -37,6 +39,7 @@ const Student: React.FC = () => {
       const studentsData = await backendService.getStudents();
       setStudents(studentsData);
       console.log('학생 목록 로드 성공:', studentsData.length);
+      console.log('첫 번째 학생 데이터:', studentsData[0]);
     } catch (err) {
       console.error('학생 목록 로드 실패:', err);
       setError(err instanceof Error ? err.message : '학생 목록을 불러오는데 실패했습니다.');
@@ -66,6 +69,7 @@ const Student: React.FC = () => {
         name: '',
         email: '',
         grade: '',
+        school: '',
         phone: '',
         parentName: '',
         parentPhone: '',
@@ -85,7 +89,13 @@ const Student: React.FC = () => {
 
   // 학생 수정 시작
   const handleEditStudent = (student: Student) => {
-    setEditingStudent(student);
+    // enrollmentDate가 없으면 현재 날짜로 기본 설정
+    const studentWithDefaults = {
+      ...student,
+      enrollmentDate: student.enrollmentDate || new Date(),
+      status: student.status || 'active'
+    };
+    setEditingStudent(studentWithDefaults);
     setShowEditForm(true);
   };
 
@@ -110,6 +120,7 @@ const Student: React.FC = () => {
         name: editingStudent.name,
         email: editingStudent.email,
         grade: editingStudent.grade,
+        school: editingStudent.school,
         phone: editingStudent.phone,
         parentName: editingStudent.parentName,
         parentPhone: editingStudent.parentPhone,
@@ -274,6 +285,18 @@ const Student: React.FC = () => {
                 </select>
               </div>
               <div className="form-group">
+                <label>학교</label>
+                <input
+                  type="text"
+                  value={newStudent.school}
+                  onChange={(e) => setNewStudent({...newStudent, school: e.target.value})}
+                  placeholder="학교명을 입력하세요"
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
                 <label>전화번호</label>
                 <input
                   type="tel"
@@ -281,9 +304,6 @@ const Student: React.FC = () => {
                   onChange={(e) => setNewStudent({...newStudent, phone: e.target.value})}
                 />
               </div>
-            </div>
-
-            <div className="form-row">
               <div className="form-group">
                 <label>보호자 이름</label>
                 <input
@@ -292,6 +312,9 @@ const Student: React.FC = () => {
                   onChange={(e) => setNewStudent({...newStudent, parentName: e.target.value})}
                 />
               </div>
+            </div>
+
+            <div className="form-row">
               <div className="form-group">
                 <label>보호자 전화번호</label>
                 <input
@@ -386,6 +409,18 @@ const Student: React.FC = () => {
                 </select>
               </div>
               <div className="form-group">
+                <label>학교</label>
+                <input
+                  type="text"
+                  value={editingStudent.school || ''}
+                  onChange={(e) => setEditingStudent({...editingStudent, school: e.target.value})}
+                  placeholder="학교명을 입력하세요"
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
                 <label>전화번호</label>
                 <input
                   type="tel"
@@ -393,9 +428,6 @@ const Student: React.FC = () => {
                   onChange={(e) => setEditingStudent({...editingStudent, phone: e.target.value})}
                 />
               </div>
-            </div>
-
-            <div className="form-row">
               <div className="form-group">
                 <label>보호자 이름</label>
                 <input
@@ -404,6 +436,9 @@ const Student: React.FC = () => {
                   onChange={(e) => setEditingStudent({...editingStudent, parentName: e.target.value})}
                 />
               </div>
+            </div>
+
+            <div className="form-row">
               <div className="form-group">
                 <label>보호자 전화번호</label>
                 <input
@@ -422,6 +457,39 @@ const Student: React.FC = () => {
                 onChange={(e) => setEditingStudent({...editingStudent, address: e.target.value})}
               />
             </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label>재원 상태</label>
+                <select
+                  value={editingStudent.status || 'active'}
+                  onChange={(e) => setEditingStudent({...editingStudent, status: e.target.value as 'active' | 'withdrawn'})}
+                >
+                  <option value="active">재원</option>
+                  <option value="withdrawn">퇴원</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>첫 등원일</label>
+                <input
+                  type="date"
+                  value={editingStudent.enrollmentDate ? new Date(editingStudent.enrollmentDate).toISOString().split('T')[0] : ''}
+                  onChange={(e) => setEditingStudent({...editingStudent, enrollmentDate: new Date(e.target.value)})}
+                />
+              </div>
+            </div>
+
+            {editingStudent.withdrawalDate && (
+              <div className="form-group">
+                <label>퇴원일</label>
+                <input
+                  type="date"
+                  value={new Date(editingStudent.withdrawalDate).toISOString().split('T')[0]}
+                  disabled
+                  className="input-disabled"
+                />
+              </div>
+            )}
 
             <div className="form-actions">
               <button 
@@ -456,24 +524,40 @@ const Student: React.FC = () => {
         ) : (
           <div className="students-grid">
             {students.map((student) => (
-              <div key={student.id} className="student-card">
+              <div key={student.id} className={`student-card ${student.status === 'withdrawn' ? 'student-card--withdrawn' : ''}`}>
                 <div className="student-info">
-                  <h3>{student.name}</h3>
+                  <div className="student-header">
+                    <h3>{student.name}</h3>
+                    <span className={`student-status student-status--${student.status || 'active'}`}>
+                      {(student.status || 'active') === 'active' ? '재원' : '퇴원'}
+                    </span>
+                  </div>
                   <p className="student-grade">{student.grade}</p>
+                  {student.school && <p className="student-school">{student.school}</p>}
                   <p className="student-email">{student.email}</p>
                   {student.phone && <p className="student-phone">{student.phone}</p>}
                   {student.parentName && (
                     <p className="student-parent">보호자: {student.parentName}</p>
                   )}
+                  {student.enrollmentDate && (
+                    <p className="student-enrollment-date">
+                      등원일: {new Date(student.enrollmentDate).toLocaleDateString()}
+                    </p>
+                  )}
+                  {student.withdrawalDate && (
+                    <p className="student-withdrawal-date">
+                      퇴원일: {new Date(student.withdrawalDate).toLocaleDateString()}
+                    </p>
+                  )}
                 </div>
                 <div className="student-actions">
-                  <button 
+                  <button
                     className="edit-btn"
                     onClick={() => handleEditStudent(student)}
                   >
                     수정
                   </button>
-                  <button 
+                  <button
                     className="delete-btn"
                     onClick={() => handleDeleteStudent(student.id)}
                   >
@@ -485,6 +569,13 @@ const Student: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* 학생 PIN 관리 섹션 */}
+      <StudentPinManagement
+        students={students}
+        onSuccess={(message) => setSuccess(message)}
+        onError={(message) => setError(message)}
+      />
     </div>
   );
 };

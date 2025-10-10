@@ -1,0 +1,111 @@
+/* SeatLayoutSelector 컴포넌트 스타일 */
+
+.seat-layout-selector {
+  background-color: white;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.seat-layout-selector__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.seat-layout-selector__title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.seat-layout-selector__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.seat-layout-selector__empty {
+  text-align: center;
+  padding: 32px 16px;
+}
+
+.seat-layout-selector__empty p {
+  color: #718096;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+}
+
+/* Layout Card */
+.layout-card {
+  padding: 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background-color: #ffffff;
+}
+
+.layout-card:hover {
+  border-color: #cbd5e0;
+  background-color: #f7fafc;
+  transform: translateY(-1px);
+}
+
+.layout-card:focus {
+  outline: none;
+  border-color: #3182ce;
+  box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+}
+
+.layout-card--selected {
+  border-color: #3182ce;
+  background-color: #ebf8ff;
+}
+
+.layout-card--selected:hover {
+  background-color: #e6f7ff;
+}
+
+.layout-card__name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 6px;
+}
+
+.layout-card__info {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.layout-card__seats,
+.layout-card__groups {
+  font-size: 0.8rem;
+  color: #718096;
+}
+
+.layout-card__date {
+  font-size: 0.75rem;
+  color: #a0aec0;
+}
+
+/* 버튼 */
+.btn--small {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .seat-layout-selector__list {
+    max-height: 300px;
+  }
+}

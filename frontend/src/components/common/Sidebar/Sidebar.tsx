@@ -25,6 +25,12 @@ const SIDEBAR_MENU_ITEMS = [
     label: '시간표',
     path: '/timetable',
     icon: '📅'
+  },
+  {
+    id: 'attendance',
+    label: '출석 관리',
+    path: '/attendance',
+    icon: '📋'
   }
 ];
 

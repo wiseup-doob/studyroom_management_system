@@ -6,6 +6,7 @@
 
 import { httpsCallable } from 'firebase/functions';
 import { functions } from './firebase';
+import { convertTimestampToDate } from '../utils/dateConverter';
 import {
   Student,
   CreateStudentRequest,
@@ -68,16 +69,20 @@ class StudentService {
 
       const result = await response.json();
       console.log('getStudents 응답:', result);
-      
+
       // 응답 구조 확인 및 안전한 데이터 추출
+      let students: Student[] = [];
       if (result && result.data && Array.isArray(result.data)) {
-        return result.data as Student[];
+        students = result.data;
       } else if (result && Array.isArray(result)) {
-        return result as Student[];
+        students = result;
       } else {
         console.warn('예상과 다른 응답 구조:', result);
         return [];
       }
+
+      // Timestamp를 Date로 변환
+      return convertTimestampToDate(students) as Student[];
     } catch (error) {
       console.error('학생 목록 조회 실패:', error);
       throw error;

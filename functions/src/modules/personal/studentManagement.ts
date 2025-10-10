@@ -19,11 +19,15 @@ export interface Student {
   name: string;
   email: string;
   grade: string;
+  school?: string;
   phone?: string;
   parentName?: string;
   parentPhone?: string;
   address?: string;
-  isActive: boolean;
+  status: "active" | "withdrawn";
+  enrollmentDate: Date;
+  withdrawalDate?: Date;
+  isActive: boolean; // 하위 호환성
   createdAt: Date;
   updatedAt: Date;
   userId: string;
@@ -34,20 +38,26 @@ export interface CreateStudentRequest {
   name: string;
   email: string;
   grade: string;
+  school?: string;
   phone?: string;
   parentName?: string;
   parentPhone?: string;
   address?: string;
+  enrollmentDate?: Date;
 }
 
 export interface UpdateStudentRequest {
   name?: string;
   email?: string;
   grade?: string;
+  school?: string;
   phone?: string;
   parentName?: string;
   parentPhone?: string;
   address?: string;
+  status?: "active" | "withdrawn";
+  enrollmentDate?: Date;
+  withdrawalDate?: Date;
 }
 
 export interface SearchStudentsRequest {
@@ -143,16 +153,19 @@ export const createStudent = onCall({
     // 학생 데이터 생성
     const studentId = db.collection("users").doc(userId).collection("students").doc().id;
     const now = new Date();
-    
+
     const newStudent: Student = {
       id: studentId,
       name: studentData.name.trim(),
       email: studentData.email ? studentData.email.toLowerCase().trim() : "",
       grade: studentData.grade,
+      school: studentData.school?.trim(),
       phone: studentData.phone?.trim(),
       parentName: studentData.parentName?.trim(),
       parentPhone: studentData.parentPhone?.trim(),
       address: studentData.address?.trim(),
+      status: "active",
+      enrollmentDate: studentData.enrollmentDate || now, // 미지정 시 생성일 사용
       isActive: true,
       createdAt: now,
       updatedAt: now,
@@ -365,10 +378,25 @@ export const updateStudent = onCall({
     if (updateData.name) updateFields.name = updateData.name.trim();
     if (updateData.email) updateFields.email = updateData.email.toLowerCase().trim();
     if (updateData.grade) updateFields.grade = updateData.grade;
+    if (updateData.school !== undefined) updateFields.school = updateData.school?.trim() || null;
     if (updateData.phone !== undefined) updateFields.phone = updateData.phone?.trim() || null;
     if (updateData.parentName !== undefined) updateFields.parentName = updateData.parentName?.trim() || null;
     if (updateData.parentPhone !== undefined) updateFields.parentPhone = updateData.parentPhone?.trim() || null;
     if (updateData.address !== undefined) updateFields.address = updateData.address?.trim() || null;
+
+    // 상태 변경 처리
+    if (updateData.status !== undefined) {
+      updateFields.status = updateData.status;
+      updateFields.isActive = updateData.status === "active"; // 하위 호환성
+
+      // 퇴원 상태로 변경 시 퇴원일 자동 설정
+      if (updateData.status === "withdrawn" && !updateData.withdrawalDate) {
+        updateFields.withdrawalDate = FieldValue.serverTimestamp();
+      }
+    }
+
+    if (updateData.enrollmentDate !== undefined) updateFields.enrollmentDate = updateData.enrollmentDate;
+    if (updateData.withdrawalDate !== undefined) updateFields.withdrawalDate = updateData.withdrawalDate;
 
     // 학생 정보 업데이트
     await studentRef.update(updateFields);

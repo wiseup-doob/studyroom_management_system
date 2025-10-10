@@ -14,3 +14,4 @@ export * from "./shareScheduleManagement";
 export * from "./seatManagement";
 export * from "./settingsManagement";
 export * from "./studentManagement";
+export * from "./studentAttendanceManagement";

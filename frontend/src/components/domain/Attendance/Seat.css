@@ -1,7 +1,8 @@
 /* Seat 컴포넌트 스타일 */
 
 .seat {
-  aspect-ratio: 1;
+  width: 60px;
+  height: 60px;
   border: 2px solid #e2e8f0;
   border-radius: 8px;
   display: flex;
@@ -10,8 +11,6 @@
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
-  min-height: 60px;
-  min-width: 60px;
   position: relative;
   background-color: #ffffff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -114,7 +113,6 @@
 
 /* 선택된 좌석 */
 .seat--selected {
-  background-color: var(--color-seat-selected-bg) !important;
   border-color: #2d3748 !important;
   box-shadow: 0 0 0 3px rgba(45, 55, 72, 0.2) !important;
   transform: scale(1.05);
@@ -127,18 +125,18 @@
 /* 반응형 디자인 */
 @media (max-width: 768px) {
   .seat {
-    min-height: 50px;
-    min-width: 50px;
+    width: 50px;
+    height: 50px;
   }
-  
+
   .seat__number {
     font-size: 0.7rem;
   }
-  
+
   .seat__student-name {
     font-size: 0.65rem;
   }
-  
+
   .seat__student-id {
     font-size: 0.55rem;
   }
@@ -146,19 +144,49 @@
 
 @media (max-width: 480px) {
   .seat {
-    min-height: 40px;
-    min-width: 40px;
+    width: 40px;
+    height: 40px;
   }
-  
+
   .seat__number {
     font-size: 0.65rem;
   }
-  
+
   .seat__student-name {
     font-size: 0.6rem;
   }
-  
+
   .seat__student-id {
     font-size: 0.5rem;
   }
+}
+
+/* 좌석 라벨 */
+.seat__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #4a5568;
+  margin-bottom: 2px;
+}
+
+/* 출석 상태 뱃지 */
+.seat__badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 0.55rem;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.seat__badge--late {
+  background-color: #FFC107;
+  color: #000;
+}
+
+.seat__badge--early {
+  background-color: #FF9800;
+  color: #FFF;
 }

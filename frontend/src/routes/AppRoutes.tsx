@@ -8,6 +8,8 @@ import Home from '../pages/Home/Home';
 import Login from '../pages/Login/Login';
 import Student from '../pages/Student/Student';
 import TimeTable from '../pages/TimeTable/TimeTable';
+import Attendance from '../pages/Attendance/Attendance';
+import AttendanceCheckIn from '../pages/AttendanceCheckIn/AttendanceCheckIn';
 import StudentTimetableSharedEdit from '../pages/StudentTimetableSharedEdit/StudentTimetableSharedEdit';
 import SubmissionComplete from '../pages/SubmissionComplete/SubmissionComplete';
 
@@ -64,6 +66,23 @@ export const AppRoutes: React.FC = () => {
             </MainLayout>
           </ProtectedRoute>
         }
+      />
+
+      <Route
+        path={ROUTES.ATTENDANCE}
+        element={
+          <ProtectedRoute>
+            <MainLayout>
+              <Attendance />
+            </MainLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* 학생용 출석 체크 페이지 - 사이드바 없음 (공개 링크, 로그인 불필요) */}
+      <Route
+        path="/attendance-check/:linkToken"
+        element={<AttendanceCheckIn />}
       />
 
       {/* 학생용 시간표 편집 페이지 - 사이드바 없음 (외부 공유 링크) */}

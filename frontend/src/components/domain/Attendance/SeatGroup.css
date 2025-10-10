@@ -1,0 +1,73 @@
+/* SeatGroup 컴포넌트 스타일 */
+
+.seat-group {
+  padding: 16px;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  width: fit-content; /* 좌석 배치에 맞게 가로 크기 조절 */
+}
+
+.seat-group__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.seat-group__name {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.seat-group__size {
+  font-size: 0.875rem;
+  color: #718096;
+  font-weight: 500;
+}
+
+.seat-group__grid {
+  display: grid;
+  gap: 8px;
+  justify-content: center; /* 그리드 아이템 중앙 정렬 */
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .seat-group {
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+
+  .seat-group__header {
+    margin-bottom: 8px;
+  }
+
+  .seat-group__name {
+    font-size: 0.9rem;
+  }
+
+  .seat-group__size {
+    font-size: 0.8rem;
+  }
+
+  .seat-group__grid {
+    gap: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .seat-group {
+    padding: 8px;
+    margin-bottom: 8px;
+  }
+
+  .seat-group__grid {
+    gap: 4px;
+  }
+}

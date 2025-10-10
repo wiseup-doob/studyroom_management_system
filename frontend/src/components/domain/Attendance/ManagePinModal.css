@@ -1,0 +1,230 @@
+/* ManagePinModal 스타일 */
+
+.modal-content--pin {
+  max-width: 500px;
+}
+
+/* 학생 정보 카드 */
+.student-info-card {
+  padding: 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  color: white;
+  margin-bottom: 20px;
+}
+
+.student-info-card__name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.student-info-card__details {
+  font-size: 0.9rem;
+  opacity: 0.9;
+  margin-bottom: 8px;
+}
+
+.student-info-card__pin-status {
+  margin-top: 8px;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.status-badge--locked {
+  background-color: rgba(229, 62, 62, 0.2);
+}
+
+.status-badge--active {
+  background-color: rgba(72, 187, 120, 0.2);
+}
+
+/* 액션 탭 */
+.action-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 4px;
+  background-color: #f7fafc;
+  border-radius: 8px;
+}
+
+.action-tab {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  background-color: transparent;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #4a5568;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.action-tab:hover {
+  background-color: #e2e8f0;
+}
+
+.action-tab--active {
+  background-color: #ffffff;
+  color: #3182ce;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* 성공 메시지 */
+.success-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background-color: #f0fff4;
+  border: 1px solid #9ae6b4;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.success-message__icon {
+  font-size: 1.2rem;
+}
+
+.success-message__text {
+  flex: 1;
+  font-size: 0.9rem;
+  color: #22543d;
+  font-weight: 500;
+}
+
+/* PIN 폼 */
+.pin-form {
+  margin-top: 16px;
+}
+
+.pin-form__section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pin-form__description {
+  font-size: 0.9rem;
+  color: #4a5568;
+  line-height: 1.6;
+  margin: 0;
+  padding: 12px;
+  background-color: #f7fafc;
+  border-left: 3px solid #3182ce;
+  border-radius: 4px;
+}
+
+.pin-form__hint {
+  font-size: 0.85rem;
+  color: #718096;
+  padding: 8px 12px;
+  background-color: #fffaf0;
+  border-radius: 6px;
+  border-left: 3px solid #ed8936;
+}
+
+/* 생성된 PIN 디스플레이 */
+.generated-pin-display {
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  text-align: center;
+  color: white;
+}
+
+.generated-pin-display__label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  opacity: 0.9;
+  margin-bottom: 8px;
+}
+
+.generated-pin-display__value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: 0.5em;
+  margin-bottom: 12px;
+  font-family: 'Courier New', monospace;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.generated-pin-display__hint {
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+
+/* 폼 그룹 (공통 스타일 확장) */
+.pin-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pin-form .form-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.pin-form .form-input {
+  padding: 12px 14px;
+  border: 2px solid #cbd5e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.3em;
+  text-align: center;
+  font-weight: 700;
+}
+
+.pin-form .form-input:focus {
+  outline: none;
+  border-color: #3182ce;
+  box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+}
+
+.pin-form .form-input::placeholder {
+  letter-spacing: normal;
+  text-align: left;
+  font-weight: normal;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .modal-content--pin {
+    max-width: 100%;
+  }
+
+  .student-info-card {
+    padding: 12px;
+  }
+
+  .student-info-card__name {
+    font-size: 1.1rem;
+  }
+
+  .action-tabs {
+    flex-direction: column;
+  }
+
+  .action-tab {
+    width: 100%;
+  }
+
+  .generated-pin-display__value {
+    font-size: 2rem;
+    letter-spacing: 0.3em;
+  }
+}

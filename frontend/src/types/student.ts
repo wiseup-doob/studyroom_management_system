@@ -5,11 +5,15 @@ export interface Student {
   name: string;                    // 학생 이름
   email: string;                   // 학생 이메일
   grade: string;                   // 학생 학년 (중1, 중2, 중3, 고1, 고2, 고3)
+  school?: string;                 // 학교 이름
   phone?: string;                  // 학생 전화번호
   parentName?: string;             // 보호자 이름
   parentPhone?: string;            // 보호자 전화번호
   address?: string;                // 주소
-  isActive: boolean;               // 활성 상태
+  status: 'active' | 'withdrawn';  // 재원 상태
+  enrollmentDate: Date;            // 첫 등원일
+  withdrawalDate?: Date;           // 퇴원일
+  isActive: boolean;               // 활성 상태 (하위 호환성)
   createdAt: Date;                 // 생성일
   updatedAt: Date;                 // 수정일
   userId: string;                  // 소유자 사용자 ID
@@ -20,10 +24,12 @@ export interface CreateStudentRequest {
   name: string;
   email: string;
   grade: string;
+  school?: string;
   phone?: string;
   parentName?: string;
   parentPhone?: string;
   address?: string;
+  enrollmentDate?: Date;  // 첫 등원일 (미지정 시 생성일 사용)
 }
 
 // 학생 수정 요청 타입
@@ -31,10 +37,14 @@ export interface UpdateStudentRequest {
   name?: string;
   email?: string;
   grade?: string;
+  school?: string;
   phone?: string;
   parentName?: string;
   parentPhone?: string;
   address?: string;
+  status?: 'active' | 'withdrawn';
+  enrollmentDate?: Date;
+  withdrawalDate?: Date;
 }
 
 // 학생 검색 요청 타입

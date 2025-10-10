@@ -1,140 +1,153 @@
-import React from 'react';
-import { Classroom, AttendanceStudent } from '../../../types/attendance';
-import { Seat } from './Seat';
+import React, { useMemo } from 'react';
+import {
+  SeatLayout,
+  SeatAssignment,
+  StudentAttendanceRecord,
+  SeatingChartSeat
+} from '../../../types/attendance';
+import { Student } from '../../../types/student';
+import SeatGroup from './SeatGroup';
 import './SeatingChart.css';
 
 interface SeatingChartProps {
-  classroom: Classroom;
-  students: AttendanceStudent[];
+  layout: SeatLayout;
+  assignments: SeatAssignment[];
+  attendanceRecords: StudentAttendanceRecord[];
+  students: Student[];
   selectedSeatId: string | null;
   onSeatClick: (seatId: string) => void;
 }
 
 export const SeatingChart: React.FC<SeatingChartProps> = ({
-  classroom,
+  layout,
+  assignments,
+  attendanceRecords,
   students,
   selectedSeatId,
   onSeatClick
 }) => {
-  // 학생 ID로 학생 정보를 찾는 헬퍼 함수
-  const findStudentById = (studentId: string | undefined): AttendanceStudent | undefined => {
-    if (!studentId) return undefined;
-    return students.find(student => student.id === studentId);
-  };
+  // 1. SeatingChartSeat 배열 생성 (useMemo로 최적화)
+  const seatingChartSeats: SeatingChartSeat[] = useMemo(() => {
+    return layout.layout.seats.map(seat => {
+      const assignment = assignments.find(a => a.seatId === seat.id);
+      const record = attendanceRecords.find(r => r.seatId === seat.id);
+      const student = assignment?.studentId
+        ? students.find(s => s.id === assignment.studentId)
+        : undefined;
 
-  // 반응형 그리드 크기 계산
-  const getResponsiveGridSize = () => {
-    const screenWidth = window.innerWidth;
-    
-    if (screenWidth >= 1400) {
-      return { rows: classroom.rows, cols: classroom.cols, gap: '12px' };
-    } else if (screenWidth >= 1200) {
-      return { rows: classroom.rows, cols: classroom.cols, gap: '10px' };
-    } else if (screenWidth >= 1024) {
-      return { rows: classroom.rows, cols: classroom.cols, gap: '8px' };
-    } else if (screenWidth >= 768) {
-      return { rows: classroom.rows, cols: classroom.cols, gap: '6px' };
-    } else if (screenWidth >= 480) {
-      return { rows: classroom.rows, cols: classroom.cols, gap: '4px' };
-    } else {
-      return { rows: classroom.rows, cols: classroom.cols, gap: '3px' };
-    }
-  };
+      return {
+        seatLayoutSeat: seat,
+        assignment,
+        attendanceRecord: record,
+        student
+      };
+    });
+  }, [layout.layout.seats, assignments, attendanceRecords, students]);
 
-  const gridSize = getResponsiveGridSize();
+  // 2. 그룹별로 분류
+  const groupedSeats = useMemo(() => {
+    return layout.layout.groups?.map(group => {
+      const groupSeats = seatingChartSeats.filter(
+        s => s.seatLayoutSeat.groupId === group.id
+      );
+      return {
+        group,
+        seats: groupSeats
+      };
+    }) || [];
+  }, [layout.layout.groups, seatingChartSeats]);
 
-  // 좌석 통계 계산
-  const getSeatStats = () => {
-    const stats = {
-      total: classroom.seats.length,
-      empty: 0,
-      present: 0,
-      dismissed: 0,
-      unauthorized: 0,
-      authorized: 0,
-      notEnrolled: 0
+  // 3. 출석 통계 계산
+  const stats = useMemo(() => {
+    const summary = {
+      totalSeats: layout.layout.seats.length,
+      assignedSeats: 0,
+      checkedIn: 0,
+      checkedOut: 0,
+      notArrived: 0,
+      absentExcused: 0,
+      absentUnexcused: 0,
+      lateCount: 0,
+      earlyLeaveCount: 0
     };
 
-    classroom.seats.forEach(seat => {
-      switch (seat.status) {
-        case 'empty':
-          stats.empty++;
+    attendanceRecords.forEach(record => {
+      switch (record.status) {
+        case 'checked_in':
+          summary.checkedIn++;
           break;
-        case 'present':
-          stats.present++;
+        case 'checked_out':
+          summary.checkedOut++;
           break;
-        case 'dismissed':
-          stats.dismissed++;
+        case 'not_arrived':
+          summary.notArrived++;
           break;
-        case 'unauthorized':
-          stats.unauthorized++;
+        case 'absent_excused':
+          summary.absentExcused++;
           break;
-        case 'authorized':
-          stats.authorized++;
-          break;
-        case 'not-enrolled':
-          stats.notEnrolled++;
+        case 'absent_unexcused':
+          summary.absentUnexcused++;
           break;
       }
+
+      if (record.isLate) summary.lateCount++;
+      if (record.isEarlyLeave) summary.earlyLeaveCount++;
     });
 
-    return stats;
-  };
+    summary.assignedSeats = assignments.length;
 
-  const stats = getSeatStats();
+    return summary;
+  }, [layout.layout.seats.length, assignments.length, attendanceRecords]);
 
   return (
     <div className="seating-chart">
-      {/* 좌석 통계 */}
-      <div className="seating-chart__stats">
-        <div className="stat-item">
-          <span className="stat-label">전체:</span>
-          <span className="stat-value">{stats.total}</span>
-        </div>
-        <div className="stat-item stat-item--empty">
-          <span className="stat-label">빈 좌석:</span>
-          <span className="stat-value">{stats.empty}</span>
-        </div>
-        <div className="stat-item stat-item--present">
-          <span className="stat-label">등원:</span>
-          <span className="stat-value">{stats.present}</span>
-        </div>
-        <div className="stat-item stat-item--dismissed">
-          <span className="stat-label">사유결석:</span>
-          <span className="stat-value">{stats.dismissed}</span>
-        </div>
-        <div className="stat-item stat-item--unauthorized">
-          <span className="stat-label">무단결석:</span>
-          <span className="stat-value">{stats.unauthorized}</span>
-        </div>
-        <div className="stat-item stat-item--authorized">
-          <span className="stat-label">하원:</span>
-          <span className="stat-value">{stats.authorized}</span>
-        </div>
-        <div className="stat-item stat-item--not-enrolled">
-          <span className="stat-label">미등원:</span>
-          <span className="stat-value">{stats.notEnrolled}</span>
+      {/* 헤더: 배치도 이름 + 통계 */}
+      <div className="seating-chart__header">
+        <h3 className="seating-chart__title">{layout.name}</h3>
+
+        <div className="seating-chart__stats">
+          <div className="stat-item">
+            <span className="stat-label">전체:</span>
+            <span className="stat-value">{stats.totalSeats}</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-label">할당:</span>
+            <span className="stat-value">{stats.assignedSeats}</span>
+          </div>
+          <div className="stat-item stat-item--checked-in">
+            <span className="stat-label">등원:</span>
+            <span className="stat-value">{stats.checkedIn}</span>
+          </div>
+          <div className="stat-item stat-item--checked-out">
+            <span className="stat-label">하원:</span>
+            <span className="stat-value">{stats.checkedOut}</span>
+          </div>
+          <div className="stat-item stat-item--excused">
+            <span className="stat-label">사유결석:</span>
+            <span className="stat-value">{stats.absentExcused}</span>
+          </div>
+          <div className="stat-item stat-item--unexcused">
+            <span className="stat-label">무단결석:</span>
+            <span className="stat-value">{stats.absentUnexcused}</span>
+          </div>
+          {stats.lateCount > 0 && (
+            <div className="stat-item stat-item--late">
+              <span className="stat-label">지각:</span>
+              <span className="stat-value">{stats.lateCount}</span>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* 좌석 그리드 */}
-      <div 
-        className="seating-chart__grid"
-        style={{
-          gridTemplateColumns: `repeat(${gridSize.cols}, 1fr)`,
-          gridTemplateRows: `repeat(${gridSize.rows}, 1fr)`,
-          gap: gridSize.gap
-        }}
-        role="grid"
-        aria-label={`${classroom.name} 좌석 배치도`}
-      >
-        {classroom.seats.map(seat => (
-          <Seat
-            key={seat.id}
-            seat={seat}
-            student={findStudentById(seat.studentId)}
-            isSelected={selectedSeatId === seat.id}
-            onClick={onSeatClick}
+      {/* 그룹별 좌석 배치도 */}
+      <div className="seating-chart__groups">
+        {groupedSeats.map(({ group, seats }) => (
+          <SeatGroup
+            key={group.id}
+            group={group}
+            seats={seats}
+            selectedSeatId={selectedSeatId}
+            onSeatClick={onSeatClick}
           />
         ))}
       </div>
@@ -142,28 +155,24 @@ export const SeatingChart: React.FC<SeatingChartProps> = ({
       {/* 범례 */}
       <div className="seating-chart__legend">
         <div className="legend-item">
-          <div className="legend-color legend-color--empty"></div>
-          <span>빈 좌석</span>
-        </div>
-        <div className="legend-item">
-          <div className="legend-color legend-color--not-enrolled"></div>
-          <span>미등원</span>
-        </div>
-        <div className="legend-item">
-          <div className="legend-color legend-color--dismissed"></div>
-          <span>사유결석</span>
-        </div>
-        <div className="legend-item">
-          <div className="legend-color legend-color--present"></div>
+          <div className="legend-color" style={{ backgroundColor: '#4CAF50' }}></div>
           <span>등원</span>
         </div>
         <div className="legend-item">
-          <div className="legend-color legend-color--unauthorized"></div>
+          <div className="legend-color" style={{ backgroundColor: '#9E9E9E' }}></div>
+          <span>하원</span>
+        </div>
+        <div className="legend-item">
+          <div className="legend-color" style={{ backgroundColor: '#FFC107' }}></div>
+          <span>사유결석</span>
+        </div>
+        <div className="legend-item">
+          <div className="legend-color" style={{ backgroundColor: '#F44336' }}></div>
           <span>무단결석</span>
         </div>
         <div className="legend-item">
-          <div className="legend-color legend-color--authorized"></div>
-          <span>하원</span>
+          <div className="legend-color" style={{ backgroundColor: '#FFFFFF', border: '1px solid #e2e8f0' }}></div>
+          <span>미등원</span>
         </div>
       </div>
     </div>

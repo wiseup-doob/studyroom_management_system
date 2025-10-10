@@ -1195,7 +1195,7 @@ export const createShareLink = functions.https.onCall(async (data: any, context:
     const db = admin.firestore();
 
     // 시간표 존재 확인
-    const timetableRef = db.collection("users").doc(userId).collection("timetables").doc(timetableId);
+    const timetableRef = db.collection("users").doc(userId).collection("student_timetables").doc(timetableId);
     const timetableDoc = await timetableRef.get();
 
     if (!timetableDoc.exists) {
@@ -1315,7 +1315,7 @@ export const getSharedSchedule = functions.https.onRequest(async (req, res) => {
     const timetableDoc = await db
       .collection("users")
       .doc(userId)
-      .collection("timetables")
+      .collection("student_timetables")
       .doc(sharedScheduleData.timetableId)
       .get();
 
@@ -1835,7 +1835,7 @@ export const processContribution = onCall(async (request) => {
         const timetableRef = db
           .collection("users")
           .doc(userId)
-          .collection("timetables")
+          .collection("student_timetables")
           .doc(contributionData.timetableId);
 
         const timetableDoc = await timetableRef.get();

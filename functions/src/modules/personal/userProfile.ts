@@ -1,18 +1,18 @@
-import * as functions from "firebase-functions";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 
 /**
  * 사용자 프로필 생성/업데이트
  * Google 로그인 시 사용자 정보를 Firestore에 저장
  */
-export const createOrUpdateUserProfile = functions.https.onCall(async (data: any, context: any) => {
+export const createOrUpdateUserProfile = onCall(async (request) => {
   // 인증 확인
-  if (!context.auth) {
-    throw new functions.https.HttpsError("unauthenticated", "인증이 필요합니다.");
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "인증이 필요합니다.");
   }
 
-  const userId = context.auth.uid;
-  const { name, email, profilePicture, googleId } = data;
+  const userId = request.auth.uid;
+  const { name, email, profilePicture, googleId } = request.data;
 
   try {
     const db = admin.firestore();
@@ -21,10 +21,10 @@ export const createOrUpdateUserProfile = functions.https.onCall(async (data: any
     // 사용자 문서 생성/업데이트
     const userData: any = {
       authUid: userId,
-      name: name || context.auth.token?.name || "",
-      email: email || context.auth.token?.email || "",
-      profilePicture: profilePicture || context.auth.token?.picture || "",
-      googleId: googleId || context.auth.token?.firebase?.identities?.["google.com"]?.[0] || "",
+      name: name || request.auth.token?.name || "",
+      email: email || request.auth.token?.email || "",
+      profilePicture: profilePicture || request.auth.token?.picture || "",
+      googleId: googleId || request.auth.token?.firebase?.identities?.["google.com"]?.[0] || "",
       isActive: true,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
@@ -44,26 +44,26 @@ export const createOrUpdateUserProfile = functions.https.onCall(async (data: any
     };
   } catch (error) {
     console.error("사용자 프로필 생성/업데이트 오류:", error);
-    throw new functions.https.HttpsError("internal", "서버 오류가 발생했습니다.");
+    throw new HttpsError("internal", "서버 오류가 발생했습니다.");
   }
 });
 
 /**
  * 사용자 프로필 조회
  */
-export const getUserProfile = functions.https.onCall(async (data: any, context: any) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError("unauthenticated", "인증이 필요합니다.");
+export const getUserProfile = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "인증이 필요합니다.");
   }
 
-  const userId = context.auth.uid;
+  const userId = request.auth.uid;
 
   try {
     const db = admin.firestore();
     const userDoc = await db.collection("users").doc(userId).get();
 
     if (!userDoc.exists) {
-      throw new functions.https.HttpsError("not-found", "사용자 프로필을 찾을 수 없습니다.");
+      throw new HttpsError("not-found", "사용자 프로필을 찾을 수 없습니다.");
     }
 
     return {
@@ -72,19 +72,19 @@ export const getUserProfile = functions.https.onCall(async (data: any, context: 
     };
   } catch (error) {
     console.error("사용자 프로필 조회 오류:", error);
-    throw new functions.https.HttpsError("internal", "서버 오류가 발생했습니다.");
+    throw new HttpsError("internal", "서버 오류가 발생했습니다.");
   }
 });
 
 /**
  * 사용자 프로필 소프트 삭제 (계정 비활성화)
  */
-export const deactivateUserProfile = functions.https.onCall(async (data: any, context: any) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError("unauthenticated", "인증이 필요합니다.");
+export const deactivateUserProfile = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "인증이 필요합니다.");
   }
 
-  const userId = context.auth.uid;
+  const userId = request.auth.uid;
 
   try {
     const db = admin.firestore();
@@ -102,7 +102,7 @@ export const deactivateUserProfile = functions.https.onCall(async (data: any, co
     };
   } catch (error) {
     console.error("사용자 프로필 비활성화 오류:", error);
-    throw new functions.https.HttpsError("internal", "서버 오류가 발생했습니다.");
+    throw new HttpsError("internal", "서버 오류가 발생했습니다.");
   }
 });
 
@@ -111,17 +111,17 @@ export const deactivateUserProfile = functions.https.onCall(async (data: any, co
  * 모든 관련 데이터를 완전히 삭제합니다.
  * Firestore 배치 제한(500개 문서)을 고려하여 안전하게 처리합니다.
  */
-export const deleteUserProfile = functions.https.onCall(async (data: any, context: any) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError("unauthenticated", "인증이 필요합니다.");
+export const deleteUserProfile = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "인증이 필요합니다.");
   }
 
-  const userId = context.auth.uid;
-  const { confirmDeletion } = data;
+  const userId = request.auth.uid;
+  const { confirmDeletion } = request.data;
 
   // 삭제 확인 플래그가 없으면 오류
   if (!confirmDeletion) {
-    throw new functions.https.HttpsError("failed-precondition", "계정 삭제를 확인해주세요.");
+    throw new HttpsError("failed-precondition", "계정 삭제를 확인해주세요.");
   }
 
   try {
@@ -131,7 +131,7 @@ export const deleteUserProfile = functions.https.onCall(async (data: any, contex
     // 사용자 문서 존재 확인
     const userDoc = await userRef.get();
     if (!userDoc.exists) {
-      throw new functions.https.HttpsError("not-found", "사용자 계정을 찾을 수 없습니다.");
+      throw new HttpsError("not-found", "사용자 계정을 찾을 수 없습니다.");
     }
 
     // 모든 하위 컬렉션 데이터 삭제
@@ -190,19 +190,19 @@ export const deleteUserProfile = functions.https.onCall(async (data: any, contex
     };
   } catch (error) {
     console.error("사용자 프로필 완전 삭제 오류:", error);
-    throw new functions.https.HttpsError("internal", "서버 오류가 발생했습니다.");
+    throw new HttpsError("internal", "서버 오류가 발생했습니다.");
   }
 });
 
 /**
  * 사용자 프로필 복구 (비활성화된 계정 복구)
  */
-export const restoreUserProfile = functions.https.onCall(async (data: any, context: any) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError("unauthenticated", "인증이 필요합니다.");
+export const restoreUserProfile = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "인증이 필요합니다.");
   }
 
-  const userId = context.auth.uid;
+  const userId = request.auth.uid;
 
   try {
     const db = admin.firestore();
@@ -210,12 +210,12 @@ export const restoreUserProfile = functions.https.onCall(async (data: any, conte
     const userDoc = await userRef.get();
 
     if (!userDoc.exists) {
-      throw new functions.https.HttpsError("not-found", "사용자 계정을 찾을 수 없습니다.");
+      throw new HttpsError("not-found", "사용자 계정을 찾을 수 없습니다.");
     }
 
     const userData = userDoc.data();
     if (userData?.isActive) {
-      throw new functions.https.HttpsError("failed-precondition", "이미 활성화된 계정입니다.");
+      throw new HttpsError("failed-precondition", "이미 활성화된 계정입니다.");
     }
 
     await userRef.update({
@@ -230,19 +230,19 @@ export const restoreUserProfile = functions.https.onCall(async (data: any, conte
     };
   } catch (error) {
     console.error("사용자 프로필 복구 오류:", error);
-    throw new functions.https.HttpsError("internal", "서버 오류가 발생했습니다.");
+    throw new HttpsError("internal", "서버 오류가 발생했습니다.");
   }
 });
 
 /**
  * 사용자 데이터 통계 조회 (삭제 전 확인용)
  */
-export const getUserDataStats = functions.https.onCall(async (data: any, context: any) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError("unauthenticated", "인증이 필요합니다.");
+export const getUserDataStats = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "인증이 필요합니다.");
   }
 
-  const userId = context.auth.uid;
+  const userId = request.auth.uid;
 
   try {
     const db = admin.firestore();
@@ -251,7 +251,7 @@ export const getUserDataStats = functions.https.onCall(async (data: any, context
     // 사용자 문서 존재 확인
     const userDoc = await userRef.get();
     if (!userDoc.exists) {
-      throw new functions.https.HttpsError("not-found", "사용자 계정을 찾을 수 없습니다.");
+      throw new HttpsError("not-found", "사용자 계정을 찾을 수 없습니다.");
     }
 
     const collections = [
@@ -295,19 +295,19 @@ export const getUserDataStats = functions.https.onCall(async (data: any, context
     };
   } catch (error) {
     console.error("사용자 데이터 통계 조회 오류:", error);
-    throw new functions.https.HttpsError("internal", "서버 오류가 발생했습니다.");
+    throw new HttpsError("internal", "서버 오류가 발생했습니다.");
   }
 });
 
 /**
  * 사용자 데이터 백업 생성 (삭제 전 백업)
  */
-export const createUserDataBackup = functions.https.onCall(async (data: any, context: any) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError("unauthenticated", "인증이 필요합니다.");
+export const createUserDataBackup = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "인증이 필요합니다.");
   }
 
-  const userId = context.auth.uid;
+  const userId = request.auth.uid;
 
   try {
     const db = admin.firestore();
@@ -316,7 +316,7 @@ export const createUserDataBackup = functions.https.onCall(async (data: any, con
     // 사용자 문서 존재 확인
     const userDoc = await userRef.get();
     if (!userDoc.exists) {
-      throw new functions.https.HttpsError("not-found", "사용자 계정을 찾을 수 없습니다.");
+      throw new HttpsError("not-found", "사용자 계정을 찾을 수 없습니다.");
     }
 
     const backupData: any = {
@@ -367,6 +367,6 @@ export const createUserDataBackup = functions.https.onCall(async (data: any, con
     };
   } catch (error) {
     console.error("사용자 데이터 백업 생성 오류:", error);
-    throw new functions.https.HttpsError("internal", "서버 오류가 발생했습니다.");
+    throw new HttpsError("internal", "서버 오류가 발생했습니다.");
   }
 });

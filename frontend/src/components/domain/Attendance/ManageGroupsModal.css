@@ -1,0 +1,226 @@
+/* 그룹 관리 모달 */
+.manage-groups-modal {
+  max-width: 700px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.groups-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+/* 그룹 아이템 */
+.group-item {
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  background-color: #f7fafc;
+  transition: all 0.2s ease;
+}
+
+.group-item--editing {
+  border-color: #3182ce;
+  background-color: #ebf8ff;
+}
+
+.group-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.group-order-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.btn-order {
+  width: 28px;
+  height: 20px;
+  padding: 0;
+  font-size: 0.7rem;
+  background-color: #e2e8f0;
+  border: 1px solid #cbd5e0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-order:hover:not(:disabled) {
+  background-color: #cbd5e0;
+  border-color: #a0aec0;
+}
+
+.btn-order:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.group-name-input {
+  flex: 1;
+  font-size: 1.1rem;
+  font-weight: 600;
+  padding: 8px 12px;
+  border: 1px solid #cbd5e0;
+  border-radius: 4px;
+  background-color: #ffffff;
+}
+
+.group-name-input:focus {
+  outline: 2px solid #3182ce;
+  outline-offset: 2px;
+  border-color: #3182ce;
+}
+
+.btn-delete-group {
+  padding: 6px 10px;
+  font-size: 1.2rem;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.btn-delete-group:hover:not(:disabled) {
+  background-color: #fed7d7;
+  transform: scale(1.1);
+}
+
+.btn-delete-group:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* 그룹 설정 */
+.group-config {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.config-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.config-item label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #4a5568;
+}
+
+.config-input {
+  width: 80px;
+  padding: 6px 10px;
+  border: 1px solid #cbd5e0;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.config-input:focus {
+  outline: 2px solid #3182ce;
+  outline-offset: 2px;
+  border-color: #3182ce;
+}
+
+.config-summary {
+  font-weight: 600;
+  color: #2d3748;
+  margin-left: 8px;
+  align-self: flex-end;
+  padding-bottom: 6px;
+}
+
+/* 위치 설정 */
+.group-position {
+  display: flex;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.position-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.position-item label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #718096;
+}
+
+.position-input {
+  width: 100px;
+  padding: 6px 10px;
+  border: 1px solid #cbd5e0;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.position-input:focus {
+  outline: 2px solid #3182ce;
+  outline-offset: 2px;
+  border-color: #3182ce;
+}
+
+/* 그룹 추가 버튼 */
+.btn-add-group {
+  width: 100%;
+  padding: 12px;
+  border: 2px dashed #cbd5e0;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #3182ce;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-add-group:hover {
+  border-color: #3182ce;
+  background-color: #ebf8ff;
+}
+
+/* 요약 정보 */
+.groups-summary {
+  margin-top: 16px;
+  padding: 12px;
+  background-color: #edf2f7;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.groups-summary p {
+  margin: 0;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .manage-groups-modal {
+    max-width: 95vw;
+  }
+
+  .group-config {
+    flex-wrap: wrap;
+  }
+
+  .group-position {
+    flex-wrap: wrap;
+  }
+}

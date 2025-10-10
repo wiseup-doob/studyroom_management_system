@@ -1,0 +1,153 @@
+/* AttendanceStatsCard 스타일 */
+
+.attendance-stats-card {
+  background-color: white;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 16px;
+}
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.stats-row:last-child {
+  margin-bottom: 0;
+}
+
+.stat-box {
+  background-color: #f7fafc;
+  border-radius: 6px;
+  padding: 12px;
+  text-align: center;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.stat-box:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stat-box__label {
+  font-size: 0.75rem;
+  color: #718096;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.stat-box__value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2d3748;
+}
+
+/* 색상별 스타일 */
+.stat-box--total {
+  background-color: #f7fafc;
+  border-color: #cbd5e0;
+}
+
+.stat-box--assigned {
+  background-color: #ebf8ff;
+  border-color: #90cdf4;
+}
+
+.stat-box--rate {
+  background-color: #faf5ff;
+  border-color: #d6bcfa;
+}
+
+.stat-box--checked-in {
+  background-color: #f0fff4;
+  border-color: #9ae6b4;
+}
+
+.stat-box--checked-in .stat-box__value {
+  color: #22543d;
+}
+
+.stat-box--checked-out {
+  background-color: #f7fafc;
+  border-color: #cbd5e0;
+}
+
+.stat-box--not-arrived {
+  background-color: #fffff0;
+  border-color: #fbd38d;
+}
+
+.stat-box--excused {
+  background-color: #fffaf0;
+  border-color: #fbd38d;
+}
+
+.stat-box--excused .stat-box__value {
+  color: #744210;
+}
+
+.stat-box--unexcused {
+  background-color: #fff5f5;
+  border-color: #fc8181;
+}
+
+.stat-box--unexcused .stat-box__value {
+  color: #742a2a;
+}
+
+.stat-box--late {
+  background-color: #fffaf0;
+  border-color: #f6ad55;
+}
+
+.stat-box--late .stat-box__value {
+  color: #7c2d12;
+}
+
+.stat-box--early {
+  background-color: #fff5f7;
+  border-color: #feb2b2;
+}
+
+.stat-box--early .stat-box__value {
+  color: #822727;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .stat-box {
+    padding: 10px;
+  }
+
+  .stat-box__label {
+    font-size: 0.7rem;
+  }
+
+  .stat-box__value {
+    font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+
+  .stat-box {
+    padding: 8px;
+  }
+
+  .stat-box__value {
+    font-size: 1.1rem;
+  }
+}
