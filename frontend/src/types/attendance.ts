@@ -9,6 +9,7 @@ import { Student } from './student';
 export type DayOfWeek = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
 
 export type StudentAttendanceStatus =
+  | 'scheduled'        // 예정 (배치로 사전 생성된 레코드)
   | 'checked_in'      // 등원
   | 'checked_out'     // 하원
   | 'not_arrived'     // 미등원
@@ -84,10 +85,23 @@ export interface StudentAttendanceRecord {
   seatNumber: string;
   date: string; // YYYY-MM-DD
   dayOfWeek: DayOfWeek;
+
+  // 시간표 슬롯 정보 (optional - 하위 호환성 유지)
+  timetableId?: string; // 시간표 ID
+  timeSlotId?: string; // 슬롯 ID (slot.id 또는 slot_0, slot_1...)
+  timeSlotSubject?: string; // 과목명 (예: "수학", "자습")
+  timeSlotType?: 'class' | 'self_study' | 'external'; // 슬롯 타입
+
   expectedArrivalTime: string;
   expectedDepartureTime: string;
   actualArrivalTime?: Date;
   actualDepartureTime?: Date;
+
+  // 시간 로깅 필드 (optional)
+  notArrivedAt?: Date; // 미등원 확정 시간 (수업 시작 시간)
+  absentConfirmedAt?: Date; // 결석 확정 시간 (유예 종료 시간)
+  absentMarkedAt?: Date; // 배치 처리 시간
+
   status: StudentAttendanceStatus;
   excusedReason?: string;
   excusedNote?: string;

@@ -23,6 +23,7 @@ import {
 // ==================== 타입 정의 ====================";
 
 type StudentAttendanceStatus =
+  | "scheduled" // 예정 (배치로 사전 생성된 레코드)
   | "checked_in" // 등원 (실제 등원 완료)
   | "checked_out" // 하원 (실제 하원 완료)
   | "not_arrived" // 미등원 (예정 시간 지났지만 미출석)
@@ -39,10 +40,23 @@ interface StudentAttendanceRecord {
   seatNumber: string;
   date: string; // YYYY-MM-DD
   dayOfWeek: DayOfWeek;
+
+  // 시간표 슬롯 정보 (optional - 하위 호환성 유지)
+  timetableId?: string; // 시간표 ID
+  timeSlotId?: string; // 슬롯 ID (slot.id 또는 slot_0, slot_1...)
+  timeSlotSubject?: string; // 과목명 (예: "수학", "자습")
+  timeSlotType?: "class" | "self_study" | "external"; // 슬롯 타입
+
   expectedArrivalTime: string;
   expectedDepartureTime: string;
   actualArrivalTime?: admin.firestore.Timestamp;
   actualDepartureTime?: admin.firestore.Timestamp;
+
+  // 시간 로깅 필드 (optional)
+  notArrivedAt?: admin.firestore.Timestamp; // 미등원 확정 시간 (수업 시작 시간)
+  absentConfirmedAt?: admin.firestore.Timestamp; // 결석 확정 시간 (유예 종료 시간)
+  absentMarkedAt?: admin.firestore.Timestamp; // 배치 처리 시간
+
   status: StudentAttendanceStatus;
   excusedReason?: string;
   excusedNote?: string;
@@ -472,7 +486,7 @@ export const checkAttendanceByPin = onCall(async (request) => {
   try {
     const db = admin.firestore();
 
-    // 1. 링크 토큰으로 교실 정보 조회
+    // ===== 1. 링크 토큰 조회 (컬렉션 그룹 쿼리) =====
     const linkSnapshot = await db
       .collectionGroup("attendance_check_links")
       .where("linkToken", "==", linkToken)
@@ -494,7 +508,7 @@ export const checkAttendanceByPin = onCall(async (request) => {
       throw new HttpsError("failed-precondition", "만료된 출석 체크 링크입니다.");
     }
 
-    // 2. PIN 검증 (최적화된 방식)
+    // ===== 2. PIN 검증 (최적화된 방식) =====
     const pinsSnapshot = await db
       .collection("users")
       .doc(userId)
@@ -510,7 +524,7 @@ export const checkAttendanceByPin = onCall(async (request) => {
     const pinChecks = pinsSnapshot.docs.map(async (doc) => {
       const pinData = doc.data() as AttendanceStudentPin;
       const isMatch = await bcrypt.compare(pin, pinData.pinHash);
-      
+
       return {
         doc,
         pinData,
@@ -553,7 +567,7 @@ export const checkAttendanceByPin = onCall(async (request) => {
       updatedAt: admin.firestore.Timestamp.now()
     });
 
-    // 3. 좌석 할당 확인
+    // ===== 3. 좌석 할당 확인 =====
     const assignmentSnapshot = await db
       .collection("users")
       .doc(userId)
@@ -568,151 +582,137 @@ export const checkAttendanceByPin = onCall(async (request) => {
       throw new HttpsError("not-found", "해당 좌석 배치도에 좌석이 할당되지 않았습니다.");
     }
 
-    const assignment = assignmentSnapshot.docs[0].data();
     const today = getTodayInKorea();
-    const now = new Date();
-    const dayOfWeek = getDayOfWeek(now);
+    const currentMinutes = getCurrentKoreaMinutes();
 
-    // 3-1. seatNumber Fallback 로직 (캐싱 누락 방어)
-    let seatNumber = assignment.seatNumber;
-    if (!seatNumber) {
-      const seatDoc = await db
-        .collection("users")
-        .doc(userId)
-        .collection("seats")
-        .doc(assignment.seatId)
-        .get();
-
-      if (seatDoc.exists) {
-        seatNumber = seatDoc.data()?.seatNumber || "";
-      } else {
-        throw new HttpsError("not-found", "좌석 정보를 찾을 수 없습니다.");
-      }
-    }
-
-    // 4. 오늘 출석 기록 조회 - 가장 최신 기록 확인
-    const timestamp = admin.firestore.Timestamp.now();
-
-    const latestRecordSnapshot = await db
+    // ===== 4. 슬롯 기반 조회: 현재 시간에 해당하는 슬롯 찾기 =====
+    const applicableSlotsSnapshot = await db
       .collection("users")
       .doc(userId)
       .collection("student_attendance_records")
       .where("studentId", "==", studentId)
       .where("date", "==", today)
-      .where("isLatestSession", "==", true)
-      .limit(1)
+      .where("status", "in", ["scheduled", "not_arrived", "checked_in", "checked_out"])
       .get();
 
-    // 가장 최신 기록이 없거나 checked_out 상태이면 새로운 체크인 생성
-    if (latestRecordSnapshot.empty || latestRecordSnapshot.docs[0].data().status === "checked_out") {
-      // 새로운 체크인 (등원)
-      // 시간표 검증: expectedSchedule이 없거나 오늘 요일의 스케줄이 없으면 에러
-      if (!assignment.expectedSchedule || !assignment.expectedSchedule[dayOfWeek]) {
-        throw new HttpsError(
-          "failed-precondition",
-          `오늘(${dayOfWeek})의 시간표 정보가 없습니다. 좌석을 다시 할당하거나 시간표를 확인해주세요.`
-        );
+    if (applicableSlotsSnapshot.empty) {
+      throw new HttpsError(
+        "not-found",
+        "오늘 출석할 수업이 없습니다. 배치 작업 실행을 확인하세요."
+      );
+    }
+
+    // ===== 5. 현재 시간과 가장 가까운 슬롯 찾기 (±30분 이내) =====
+    let targetRecord: any = null;
+    let minTimeDiff = Infinity;
+
+    for (const doc of applicableSlotsSnapshot.docs) {
+      const record = doc.data();
+      const slotStartMinutes = parseTimeToMinutes(record.expectedArrivalTime);
+      const slotEndMinutes = parseTimeToMinutes(record.expectedDepartureTime);
+
+      // 슬롯 시간 범위 내 또는 ±30분 이내
+      if (currentMinutes >= slotStartMinutes - 30 &&
+          currentMinutes <= slotEndMinutes + 30) {
+        const timeDiff = Math.abs(currentMinutes - slotStartMinutes);
+        if (timeDiff < minTimeDiff) {
+          minTimeDiff = timeDiff;
+          targetRecord = { ref: doc.ref, data: record };
+        }
       }
+    }
 
-      const expectedArrival = assignment.expectedSchedule[dayOfWeek].arrivalTime;
-      const expectedDeparture = assignment.expectedSchedule[dayOfWeek].departureTime;
+    if (!targetRecord) {
+      throw new HttpsError(
+        "failed-precondition",
+        "현재 시간에 해당하는 수업이 없습니다. 수업 시작 30분 전부터 체크 가능합니다."
+      );
+    }
 
-      // 시간표 활성화 여부 확인
-      if (!assignment.expectedSchedule[dayOfWeek].isActive) {
-        throw new HttpsError(
-          "failed-precondition",
-          `오늘(${dayOfWeek})은 등원일이 아닙니다. 시간표를 확인해주세요.`
-        );
-      }
+    const recordRef = targetRecord.ref as admin.firestore.DocumentReference;
+    const recordData = targetRecord.data;
+    const timestamp = admin.firestore.Timestamp.now();
 
-      // 지각 계산
-      const currentMinutes = getCurrentKoreaMinutes();
-      const expectedMinutes = parseTimeToMinutes(expectedArrival);
-      const isLate = currentMinutes > expectedMinutes + 10; // 10분 유예
+    // ===== 6. 상태 전환 로직 =====
 
-      // 당일 기존 기록 조회 (세션 번호 계산용)
-      const todayRecordsSnapshot = await db
-        .collection("users")
-        .doc(userId)
-        .collection("student_attendance_records")
-        .where("studentId", "==", studentId)
-        .where("date", "==", today)
-        .orderBy("sessionNumber", "desc")
-        .limit(1)
-        .get();
+    // 6-1. scheduled/not_arrived → checked_in (트랜잭션 사용) ⭐
+    if (recordData.status === "scheduled" || recordData.status === "not_arrived") {
+      const result = await db.runTransaction(async (transaction) => {
+        // 최신 상태 재확인 (배치 작업이 변경했을 수 있음)
+        const currentRecordDoc = await transaction.get(recordRef);
+        const currentRecordData = currentRecordDoc.data() as StudentAttendanceRecord | undefined;
 
-      const sessionNumber = todayRecordsSnapshot.empty ?
-        1 :
-        ((todayRecordsSnapshot.docs[0].data().sessionNumber as number) || 0) + 1;
+        // 상태 검증
+        if (!currentRecordData) {
+          throw new HttpsError("not-found", "출석 레코드를 찾을 수 없습니다.");
+        }
 
-      // 이전 세션의 isLatestSession을 false로 업데이트
-      if (!todayRecordsSnapshot.empty) {
-        await todayRecordsSnapshot.docs[0].ref.update({
-          isLatestSession: false,
+        if (currentRecordData.status === "absent_unexcused") {
+          // 배치가 이미 결석 확정함 (유예 기간 종료)
+          throw new HttpsError(
+            "failed-precondition",
+            "유예 기간이 종료되어 출석 처리가 불가능합니다."
+          );
+        }
+
+        if (currentRecordData.status !== "scheduled" &&
+            currentRecordData.status !== "not_arrived") {
+          // 다른 상태로 이미 변경됨
+          throw new HttpsError(
+            "failed-precondition",
+            `현재 상태(${currentRecordData.status})에서는 체크인할 수 없습니다.`
+          );
+        }
+
+        // 체크인 처리
+        const expectedMinutes = parseTimeToMinutes(currentRecordData.expectedArrivalTime);
+        const isLate = currentMinutes > expectedMinutes + 10;
+
+        const updateData: any = {
+          actualArrivalTime: timestamp,
+          status: "checked_in",
+          isLate,
+          checkInMethod: "pin",
           updatedAt: timestamp
-        });
-      }
+        };
 
-      // 새로운 출석 기록 생성 (recordId에 타임스탬프 추가)
-      const newRecordId = `${studentId}_${today.replace(/-/g, "")}_${timestamp.toMillis()}`;
-      const recordRef = db
-        .collection("users")
-        .doc(userId)
-        .collection("student_attendance_records")
-        .doc(newRecordId);
+        if (isLate) {
+          updateData.lateMinutes = currentMinutes - expectedMinutes;
+        }
 
-      const attendanceData: any = {
-        id: newRecordId,
-        userId,
-        studentId,
-        studentName,
-        seatLayoutId: assignment.seatLayoutId,
-        seatId: assignment.seatId,
-        seatNumber,
-        date: today,
-        dayOfWeek,
-        expectedArrivalTime: expectedArrival,
-        expectedDepartureTime: expectedDeparture,
-        actualArrivalTime: timestamp,
-        status: "checked_in",
-        isLate,
-        isEarlyLeave: false,
-        checkInMethod: "pin",
-        sessionNumber,
-        isLatestSession: true,
-        createdAt: timestamp,
-        updatedAt: timestamp,
-        recordTimestamp: timestamp
-      };
+        // not_arrived에서 복구된 경우 로그 추가
+        if (currentRecordData.status === "not_arrived") {
+          updateData.notes = currentRecordData.notes ?
+            `${currentRecordData.notes}\n자동 복구: 유예 기간 내 체크인` :
+            "자동 복구: 유예 기간 내 체크인";
+        }
 
-      // 지각인 경우에만 lateMinutes 추가
-      if (isLate) {
-        attendanceData.lateMinutes = currentMinutes - expectedMinutes;
-      }
+        // 트랜잭션으로 업데이트
+        transaction.update(recordRef, updateData);
 
-      await recordRef.set(attendanceData);
+        return {
+          success: true,
+          message: `${currentRecordData.timeSlotSubject || studentName} 수업 체크인 완료${isLate ? " (지각)" : ""}${
+            currentRecordData.status === "not_arrived" ? " - 자동 복구됨" : ""
+          }`,
+          action: "checked_in",
+          data: { ...currentRecordData, ...updateData }
+        };
+      });
 
-      // 링크 사용 횟수 증가
+      // 링크 사용 횟수 증가 (트랜잭션 밖에서 별도 처리)
       await linkDoc.ref.update({
         usageCount: admin.firestore.FieldValue.increment(1),
         updatedAt: timestamp
       });
 
-      return {
-        success: true,
-        message: `${studentName}님, 등원이 완료되었습니다.${isLate ? " (지각)" : ""}`,
-        action: "checked_in",
-        data: attendanceData
-      };
-    } else {
-      // 최신 기록이 checked_in 상태이면 하원 처리
-      const recordRef = latestRecordSnapshot.docs[0].ref;
-      const recordData = latestRecordSnapshot.docs[0].data() as StudentAttendanceRecord;
+      return result;
+    }
 
-      // 조퇴 계산
-      const currentMinutes = getCurrentKoreaMinutes();
+    // 6-2. checked_in → checked_out (체크아웃)
+    if (recordData.status === "checked_in") {
       const expectedMinutes = parseTimeToMinutes(recordData.expectedDepartureTime);
-      const isEarlyLeave = currentMinutes < expectedMinutes - 30; // 30분 전 조퇴
+      const isEarlyLeave = currentMinutes < expectedMinutes - 30;
 
       const updateData: any = {
         actualDepartureTime: timestamp,
@@ -722,30 +722,52 @@ export const checkAttendanceByPin = onCall(async (request) => {
         updatedAt: timestamp
       };
 
-      // 조퇴인 경우에만 earlyLeaveMinutes 추가
       if (isEarlyLeave) {
         updateData.earlyLeaveMinutes = expectedMinutes - currentMinutes;
       }
 
       await recordRef.update(updateData);
 
-      // 링크 사용 횟수 증가
       await linkDoc.ref.update({
         usageCount: admin.firestore.FieldValue.increment(1),
         updatedAt: timestamp
       });
 
-      // 업데이트된 전체 레코드 조회
-      const updatedDoc = await recordRef.get();
-      const updatedRecord = updatedDoc.data();
+      return {
+        success: true,
+        message: `${recordData.timeSlotSubject || studentName} 수업 체크아웃 완료${isEarlyLeave ? " (조퇴)" : ""}`,
+        action: "checked_out",
+        data: { ...recordData, ...updateData }
+      };
+    }
+
+    // 6-3. checked_out → checked_in (재입실)
+    if (recordData.status === "checked_out") {
+      const updateData: any = {
+        status: "checked_in",
+        checkInMethod: "pin",
+        updatedAt: timestamp,
+        notes: recordData.notes ?
+          `${recordData.notes}\n재입실: ${timestamp.toDate().toLocaleTimeString("ko-KR")}` :
+          `재입실: ${timestamp.toDate().toLocaleTimeString("ko-KR")}`
+      };
+
+      await recordRef.update(updateData);
+
+      await linkDoc.ref.update({
+        usageCount: admin.firestore.FieldValue.increment(1),
+        updatedAt: timestamp
+      });
 
       return {
         success: true,
-        message: `${studentName}님, 하원이 완료되었습니다.${isEarlyLeave ? " (조퇴)" : ""}`,
-        action: "checked_out",
-        data: updatedRecord
+        message: `${recordData.timeSlotSubject || studentName} 재입실 완료`,
+        action: "re_checked_in",
+        data: { ...recordData, ...updateData }
       };
     }
+
+    throw new HttpsError("failed-precondition", "처리할 수 없는 출석 상태입니다.");
   } catch (error) {
     console.error("출석 체크 오류:", error);
     if (error instanceof HttpsError) {
@@ -1161,159 +1183,83 @@ export const manualCheckIn = onCall(async (request) => {
 
   const userId = request.auth.uid;
   const data = request.data;
-  const { studentId, seatLayoutId } = data;
+  const { studentId } = data;
 
-  if (!studentId || !seatLayoutId) {
-    throw new HttpsError("invalid-argument", "studentId와 seatLayoutId가 필요합니다.");
+  if (!studentId) {
+    throw new HttpsError("invalid-argument", "studentId가 필요합니다.");
   }
 
   try {
     const db = admin.firestore();
-
-    // 1. 학생 정보 조회
-    const studentDoc = await db
-      .collection("users")
-      .doc(userId)
-      .collection("students")
-      .doc(studentId)
-      .get();
-
-    if (!studentDoc.exists) {
-      throw new HttpsError("not-found", "학생을 찾을 수 없습니다.");
-    }
-
-    const studentName = studentDoc.data()?.name || "";
-
-    // 2. 좌석 할당 확인
-    const assignmentSnapshot = await db
-      .collection("users")
-      .doc(userId)
-      .collection("seat_assignments")
-      .where("studentId", "==", studentId)
-      .where("seatLayoutId", "==", seatLayoutId)
-      .where("status", "==", "active")
-      .limit(1)
-      .get();
-
-    if (assignmentSnapshot.empty) {
-      throw new HttpsError("not-found", "해당 좌석 배치도에 좌석이 할당되지 않았습니다.");
-    }
-
-    const assignment = assignmentSnapshot.docs[0].data();
     const today = getTodayInKorea();
-    const now = new Date();
-    const dayOfWeek = getDayOfWeek(now);
+    const currentMinutes = getCurrentKoreaMinutes();
 
-    // seatNumber Fallback
-    let seatNumber = assignment.seatNumber;
-    if (!seatNumber) {
-      const seatDoc = await db
-        .collection("users")
-        .doc(userId)
-        .collection("seats")
-        .doc(assignment.seatId)
-        .get();
-
-      if (seatDoc.exists) {
-        seatNumber = seatDoc.data()?.seatNumber || "";
-      } else {
-        throw new HttpsError("not-found", "좌석 정보를 찾을 수 없습니다.");
-      }
-    }
-
-    // 3. 오늘 출석 기록 조회 및 세션 번호 계산
-    const timestamp = admin.firestore.Timestamp.now();
-
-    // 당일 기존 기록 조회 (세션 번호 계산용)
-    const todayRecordsSnapshot = await db
+    // ===== 1. 슬롯 기반 조회: scheduled 상태 레코드 조회 =====
+    const applicableSlotsSnapshot = await db
       .collection("users")
       .doc(userId)
       .collection("student_attendance_records")
       .where("studentId", "==", studentId)
       .where("date", "==", today)
-      .orderBy("sessionNumber", "desc")
-      .limit(1)
+      .where("status", "in", ["scheduled", "checked_in"])
       .get();
 
-    const sessionNumber = todayRecordsSnapshot.empty ?
-      1 :
-      ((todayRecordsSnapshot.docs[0].data().sessionNumber as number) || 0) + 1;
-
-    // 이전 세션의 isLatestSession을 false로 업데이트
-    if (!todayRecordsSnapshot.empty) {
-      await todayRecordsSnapshot.docs[0].ref.update({
-        isLatestSession: false,
-        updatedAt: timestamp
-      });
+    if (applicableSlotsSnapshot.empty) {
+      throw new HttpsError("not-found", "오늘 출석할 수업이 없습니다.");
     }
 
-    // 4. 시간표 검증
-    if (!assignment.expectedSchedule || !assignment.expectedSchedule[dayOfWeek]) {
-      throw new HttpsError(
-        "failed-precondition",
-        `오늘(${dayOfWeek})의 시간표 정보가 없습니다. 좌석을 다시 할당하거나 시간표를 확인해주세요.`
-      );
+    // ===== 2. 현재 시간에 가장 가까운 scheduled 슬롯 찾기 =====
+    let targetRecord: any = null;
+    let minTimeDiff = Infinity;
+
+    for (const doc of applicableSlotsSnapshot.docs) {
+      const record = doc.data();
+      if (record.status !== "scheduled") continue; // scheduled만 체크인 가능
+
+      const slotStartMinutes = parseTimeToMinutes(record.expectedArrivalTime);
+      const slotEndMinutes = parseTimeToMinutes(record.expectedDepartureTime);
+
+      if (currentMinutes >= slotStartMinutes - 30 &&
+          currentMinutes <= slotEndMinutes + 30) {
+        const timeDiff = Math.abs(currentMinutes - slotStartMinutes);
+        if (timeDiff < minTimeDiff) {
+          minTimeDiff = timeDiff;
+          targetRecord = { ref: doc.ref, data: record };
+        }
+      }
     }
 
-    if (!assignment.expectedSchedule[dayOfWeek].isActive) {
-      throw new HttpsError(
-        "failed-precondition",
-        `오늘(${dayOfWeek})은 등원일이 아닙니다. 시간표를 확인해주세요.`
-      );
+    if (!targetRecord) {
+      throw new HttpsError("failed-precondition",
+        "현재 시간에 해당하는 수업이 없습니다.");
     }
 
-    const expectedArrival = assignment.expectedSchedule[dayOfWeek].arrivalTime;
-    const expectedDeparture = assignment.expectedSchedule[dayOfWeek].departureTime;
+    // ===== 3. 체크인 처리 =====
+    const recordRef = targetRecord.ref as admin.firestore.DocumentReference;
+    const recordData = targetRecord.data;
+    const timestamp = admin.firestore.Timestamp.now();
+    const expectedMinutes = parseTimeToMinutes(recordData.expectedArrivalTime);
+    const isLate = currentMinutes > expectedMinutes + 10;
 
-    // 5. 새로운 출석 기록 생성 (recordId에 타임스탬프 추가)
-    const newRecordId = `${studentId}_${today.replace(/-/g, "")}_${timestamp.toMillis()}`;
-    const recordRef = db
-      .collection("users")
-      .doc(userId)
-      .collection("student_attendance_records")
-      .doc(newRecordId);
-
-    // 지각 계산
-    const currentMinutes = getCurrentKoreaMinutes();
-    const expectedMinutes = parseTimeToMinutes(expectedArrival);
-    const isLate = currentMinutes > expectedMinutes + 10; // 10분 유예
-
-    const attendanceData: any = {
-      id: newRecordId,
-      userId,
-      studentId,
-      studentName,
-      seatLayoutId: assignment.seatLayoutId,
-      seatId: assignment.seatId,
-      seatNumber,
-      date: today,
-      dayOfWeek,
-      expectedArrivalTime: expectedArrival,
-      expectedDepartureTime: expectedDeparture,
+    const updateData: any = {
       actualArrivalTime: timestamp,
       status: "checked_in",
       isLate,
-      isEarlyLeave: false,
       checkInMethod: "manual",
-      sessionNumber,
-      isLatestSession: true,
-      createdAt: timestamp,
-      updatedAt: timestamp,
-      recordTimestamp: timestamp
+      updatedAt: timestamp
     };
 
-    // 지각인 경우에만 lateMinutes 추가
     if (isLate) {
-      attendanceData.lateMinutes = currentMinutes - expectedMinutes;
+      updateData.lateMinutes = currentMinutes - expectedMinutes;
     }
 
-    await recordRef.set(attendanceData);
+    await recordRef.update(updateData);
 
     return {
       success: true,
       action: "checked_in",
-      message: `${studentName}님 수동 체크인이 완료되었습니다.${isLate ? " (지각)" : ""}`,
-      data: attendanceData
+      message: `${recordData.timeSlotSubject || recordData.studentName} 수동 체크인 완료`,
+      data: { ...recordData, ...updateData }
     };
   } catch (error) {
     console.error("수동 체크인 오류:", error);
@@ -1336,57 +1282,57 @@ export const manualCheckOut = onCall(async (request) => {
 
   const userId = request.auth.uid;
   const data = request.data;
-  const { studentId, seatLayoutId } = data;
+  const { studentId } = data;
 
-  if (!studentId || !seatLayoutId) {
-    throw new HttpsError("invalid-argument", "studentId와 seatLayoutId가 필요합니다.");
+  if (!studentId) {
+    throw new HttpsError("invalid-argument", "studentId가 필요합니다.");
   }
 
   try {
     const db = admin.firestore();
-
-    // 1. 학생 정보 조회
-    const studentDoc = await db
-      .collection("users")
-      .doc(userId)
-      .collection("students")
-      .doc(studentId)
-      .get();
-
-    if (!studentDoc.exists) {
-      throw new HttpsError("not-found", "학생을 찾을 수 없습니다.");
-    }
-
-    const studentName = studentDoc.data()?.name || "";
-
-    // 2. 당일 가장 최신 checked_in 기록 조회
     const today = getTodayInKorea();
+    const currentMinutes = getCurrentKoreaMinutes();
 
-    const latestRecordSnapshot = await db
+    // ===== 1. checked_in 상태 슬롯 조회 =====
+    const checkedInSlotsSnapshot = await db
       .collection("users")
       .doc(userId)
       .collection("student_attendance_records")
       .where("studentId", "==", studentId)
       .where("date", "==", today)
       .where("status", "==", "checked_in")
-      .where("isLatestSession", "==", true)
-      .limit(1)
       .get();
 
-    if (latestRecordSnapshot.empty) {
-      throw new HttpsError("not-found", "등원 기록이 없습니다. 먼저 등원해주세요.");
+    if (checkedInSlotsSnapshot.empty) {
+      throw new HttpsError("not-found", "체크인된 수업이 없습니다.");
     }
 
-    const recordRef = latestRecordSnapshot.docs[0].ref;
-    const recordData = latestRecordSnapshot.docs[0].data() as StudentAttendanceRecord;
+    // ===== 2. 현재 시간에 가장 가까운 슬롯 찾기 =====
+    let targetRecord: any = null;
+    let minTimeDiff = Infinity;
 
-    // 3. 체크아웃 처리
+    for (const doc of checkedInSlotsSnapshot.docs) {
+      const record = doc.data();
+      const slotEndMinutes = parseTimeToMinutes(record.expectedDepartureTime);
+      const timeDiff = Math.abs(currentMinutes - slotEndMinutes);
+
+      if (timeDiff < minTimeDiff) {
+        minTimeDiff = timeDiff;
+        targetRecord = { ref: doc.ref, data: record };
+      }
+    }
+
+    if (!targetRecord) {
+      throw new HttpsError("failed-precondition",
+        "체크아웃할 수업을 찾을 수 없습니다.");
+    }
+
+    // ===== 3. 체크아웃 처리 =====
+    const recordRef = targetRecord.ref as admin.firestore.DocumentReference;
+    const recordData = targetRecord.data;
     const timestamp = admin.firestore.Timestamp.now();
-
-    // 조퇴 계산
-    const currentMinutes = getCurrentKoreaMinutes();
     const expectedMinutes = parseTimeToMinutes(recordData.expectedDepartureTime);
-    const isEarlyLeave = currentMinutes < expectedMinutes - 30; // 30분 전 조퇴
+    const isEarlyLeave = currentMinutes < expectedMinutes - 30;
 
     const updateData: any = {
       actualDepartureTime: timestamp,
@@ -1396,22 +1342,17 @@ export const manualCheckOut = onCall(async (request) => {
       updatedAt: timestamp
     };
 
-    // 조퇴인 경우에만 earlyLeaveMinutes 추가
     if (isEarlyLeave) {
       updateData.earlyLeaveMinutes = expectedMinutes - currentMinutes;
     }
 
     await recordRef.update(updateData);
 
-    // 업데이트된 전체 레코드 조회
-    const updatedDoc = await recordRef.get();
-    const updatedRecord = updatedDoc.data();
-
     return {
       success: true,
       action: "checked_out",
-      message: `${studentName}님 수동 체크아웃이 완료되었습니다.${isEarlyLeave ? " (조퇴)" : ""}`,
-      data: updatedRecord
+      message: `${recordData.timeSlotSubject || recordData.studentName} 수동 체크아웃 완료${isEarlyLeave ? " (조퇴)" : ""}`,
+      data: { ...recordData, ...updateData }
     };
   } catch (error) {
     console.error("수동 체크아웃 오류:", error);

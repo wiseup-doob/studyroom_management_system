@@ -151,6 +151,23 @@ export {
   onStudentTimetableUpdate,
 } from "./triggers/onTimetableUpdate";
 
+// ==================== Scheduled Functions ====================
+
+// 출석 레코드 자동 생성 (매일 새벽 2시)
+export {
+  createDailyAttendanceRecords,
+} from "./scheduled/createDailyAttendanceRecords";
+
+// 미등원 상태 전환 (30분 간격, 09:00~23:00)
+export {
+  markNotArrivedAtStartTime,
+} from "./scheduled/markNotArrivedAtStartTime";
+
+// 결석 확정 처리 (10분 간격, 유예 기간 후)
+export {
+  markAbsentUnexcused,
+} from "./scheduled/markAbsentUnexcused";
+
 // ==================== 데이터 마이그레이션 ====================
 // 주의: 일회성 작업용 함수입니다. 사용 후 비활성화하거나 삭제하세요.
 export {

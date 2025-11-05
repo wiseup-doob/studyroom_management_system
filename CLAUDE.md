@@ -217,6 +217,14 @@ A comprehensive student attendance management system with the following features
 
 **Current Status**: Phase 1-3 deployment completed, see `PHASE_1_2_3_DEPLOYMENT_SUMMARY.md` for details
 
+**Future Architecture**: Plan to migrate from session-based to event-based attendance system (see `EVENT_BASE_ATTENDANCE_PLAN.md`):
+- **Event-based Design**: Moving from fixed session records to flexible event streams
+- **Time Range Support**: Enable partial attendance tracking (e.g., absent 09:00-14:00, present 14:00-20:00)
+- **Complex Scenarios**: Support external activities, partial attendance, and multi-segment days
+- **Event Types**: `CHECK_IN`, `CHECK_OUT`, `MARK_ABSENT`, `START_EXTERNAL`, `END_EXTERNAL`
+- **Status Calculation**: Compute attendance status from event timeline at query time
+- **New Collection**: `/users/{userId}/attendance_events` will replace session-based records
+
 ## Build Process
 
 The build process uses environment-specific variables and creates optimized bundles with code splitting. The deploy script handles environment selection and builds with appropriate configuration.
