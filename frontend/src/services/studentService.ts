@@ -38,46 +38,19 @@ class StudentService {
    */
   async getStudents(): Promise<Student[]> {
     try {
-      // Firebase Auth에서 현재 사용자의 ID 토큰 가져오기
-      const { getAuth } = await import('firebase/auth');
-      const auth = getAuth();
-      const user = auth.currentUser;
-      
-      if (!user) {
-        throw new Error('사용자가 로그인되지 않았습니다.');
-      }
-
-      const token = await user.getIdToken();
-      
-      // 환경 변수에서 프로젝트 ID 가져오기
-      const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID;
-      const functionUrl = `https://asia-northeast3-${projectId}.cloudfunctions.net/getStudents`;
-      
-      // HTTP 요청으로 Cloud Function 호출
-      const response = await fetch(functionUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({})
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      console.log('getStudents 응답:', result);
+      const getStudentsFunction = httpsCallable(this.functions, 'getStudents');
+      const result = await getStudentsFunction({});
 
       // 응답 구조 확인 및 안전한 데이터 추출
+      const responseData = result.data as any;
       let students: Student[] = [];
-      if (result && result.data && Array.isArray(result.data)) {
-        students = result.data;
-      } else if (result && Array.isArray(result)) {
-        students = result;
+
+      if (responseData && responseData.data && Array.isArray(responseData.data)) {
+        students = responseData.data;
+      } else if (responseData && Array.isArray(responseData)) {
+        students = responseData;
       } else {
-        console.warn('예상과 다른 응답 구조:', result);
+        console.warn('예상과 다른 응답 구조:', responseData);
         return [];
       }
 

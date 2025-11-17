@@ -76,14 +76,13 @@ export const markAbsentUnexcused = onSchedule({
 
           // 유예 기간이 지났으면 absent_unexcused 확정
           if (currentMinutes > graceEndMinutes) {
-            // 유예 종료 시점의 정확한 Timestamp 계산
-            const graceEndTime = new Date(record.notArrivedAt.toDate());
-            graceEndTime.setMinutes(
-              graceEndTime.getMinutes() +
-              (slotEndMinutes - parseTimeToMinutes(record.expectedArrivalTime)) +
-              30 +
-              GRACE_PERIOD_MINUTES
-            );
+            // ✅ 개선: 유예 종료 시점 계산 단순화
+            // 공식: 오늘 날짜 + 유예 종료 시간 (수업 종료 + 30분 + 5분)
+            const [year, month, day] = today.split("-").map(Number);
+            const graceEndHour = Math.floor(graceEndMinutes / 60);
+            const graceEndMin = graceEndMinutes % 60;
+
+            const graceEndTime = new Date(year, month - 1, day, graceEndHour, graceEndMin);
 
             batch.update(doc.ref, {
               status: "absent_unexcused",
@@ -96,7 +95,7 @@ export const markAbsentUnexcused = onSchedule({
             logger.info(
               `[결석 확정] userId=${userId}, studentId=${record.studentId}, ` +
               `slot=${record.expectedArrivalTime}-${record.expectedDepartureTime}, ` +
-              `confirmedAt=${graceEndTime.toISOString()}`
+              `graceEnd=${graceEndHour}:${graceEndMin.toString().padStart(2, "0")}`
             );
           }
         }

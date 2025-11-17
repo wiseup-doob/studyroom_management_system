@@ -7,9 +7,10 @@
  * - 완전한 데이터 격리
  */
 
-import { onCall, onRequest, HttpsError } from "firebase-functions/v2/https";
-import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { getFirestore, FieldValue, Timestamp } from "firebase-admin/firestore";
 import { logger } from "firebase-functions";
+import * as bcrypt from "bcrypt";
 
 const db = getFirestore();
 
@@ -112,14 +113,114 @@ function validateStudentData(data: CreateStudentRequest | UpdateStudentRequest):
 // }
 
 /**
- * 학생 생성
+ * 6자리 랜덤 PIN 생성
+ * @returns {string} 100000 ~ 999999 범위의 6자리 숫자 문자열
+ */
+function generateRandomPin(): string {
+  const pin = Math.floor(100000 + Math.random() * 900000);
+  return pin.toString();
+}
+
+/**
+ * PIN 중복 확인
+ * @param {string} userId - 사용자 ID
+ * @param {string} pin - 확인할 PIN
+ * @returns {Promise<boolean>} 중복이면 true, 아니면 false
+ */
+async function isPinDuplicate(userId: string, pin: string): Promise<boolean> {
+  const existingPin = await db
+    .collection("users")
+    .doc(userId)
+    .collection("attendance_student_pins")
+    .where("actualPin", "==", pin)
+    .where("isActive", "==", true)
+    .limit(1)
+    .get();
+
+  return !existingPin.empty;
+}
+
+/**
+ * 유니크한 6자리 PIN 생성 (중복 방지)
+ * @param {string} userId - 사용자 ID
+ * @returns {Promise<string>} 유니크한 6자리 PIN
+ * @throws {HttpsError} 10회 시도 후에도 유니크한 PIN을 생성하지 못한 경우
+ */
+async function generateUniquePin(userId: string): Promise<string> {
+  const maxAttempts = 10;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const pin = generateRandomPin();
+    const isDuplicate = await isPinDuplicate(userId, pin);
+
+    if (!isDuplicate) {
+      logger.info(`유니크 PIN 생성 성공 (시도 ${attempt}회)`, { userId, pin });
+      return pin;
+    }
+
+    logger.warn(`PIN 중복 발생, 재생성 시도 ${attempt}/${maxAttempts}`, { userId, pin });
+  }
+
+  throw new HttpsError(
+    "resource-exhausted",
+    "유니크한 PIN 생성에 실패했습니다. 다시 시도해주세요."
+  );
+}
+
+/**
+ * 학생 PIN 저장
+ * @param {string} userId - 사용자 ID
+ * @param {string} studentId - 학생 ID
+ * @param {string} studentName - 학생 이름
+ * @param {string} pin - 6자리 PIN
+ */
+async function createStudentPin(
+  userId: string,
+  studentId: string,
+  studentName: string,
+  pin: string
+): Promise<void> {
+  // PIN 해싱
+  const saltRounds = 10;
+  const pinHash = await bcrypt.hash(pin, saltRounds);
+
+  const pinData = {
+    id: studentId,
+    userId,
+    studentId,
+    studentName,
+    pinHash,
+    actualPin: pin,
+    isActive: true,
+    isLocked: false,
+    failedAttempts: 0,
+    lastChangedAt: Timestamp.now(),
+    createdAt: Timestamp.now(),
+    updatedAt: Timestamp.now()
+  };
+
+  await db
+    .collection("users")
+    .doc(userId)
+    .collection("attendance_student_pins")
+    .doc(studentId)
+    .set(pinData);
+
+  logger.info("학생 PIN 저장 성공", { userId, studentId, pin });
+}
+
+/**
+ * 학생 생성 (시간표 + PIN 자동 생성 포함)
  */
 export const createStudent = onCall({
   cors: true
 }, async (request) => {
+  let studentId: string | null = null;
+  let timetableId: string | null = null;
+
   try {
     const { auth, data } = request;
-    
+
     if (!auth) {
       throw new HttpsError("unauthenticated", "인증이 필요합니다.");
     }
@@ -151,7 +252,7 @@ export const createStudent = onCall({
     }
 
     // 학생 데이터 생성
-    const studentId = db.collection("users").doc(userId).collection("students").doc().id;
+    studentId = db.collection("users").doc(userId).collection("students").doc().id;
     const now = new Date();
 
     const newStudent: Student = {
@@ -172,7 +273,7 @@ export const createStudent = onCall({
       userId: userId
     };
 
-    // Firestore에 저장
+    // Firestore에 학생 저장
     await db
       .collection("users")
       .doc(userId)
@@ -182,17 +283,128 @@ export const createStudent = onCall({
 
     logger.info(`학생 생성 성공: ${studentId}`, { userId, studentName: studentData.name });
 
+    // 기본 시간표 자동 생성
+    try {
+      const defaultTimetableData = {
+        studentId: studentId,
+        studentName: newStudent.name,
+        name: `${newStudent.name}의 시간표`,
+        description: "자동 생성된 기본 시간표",
+        basicSchedule: {
+          dailySchedules: {
+            monday: { arrivalTime: "09:00", departureTime: "18:00", isActive: true },
+            tuesday: { arrivalTime: "09:00", departureTime: "18:00", isActive: true },
+            wednesday: { arrivalTime: "09:00", departureTime: "18:00", isActive: true },
+            thursday: { arrivalTime: "09:00", departureTime: "18:00", isActive: true },
+            friday: { arrivalTime: "09:00", departureTime: "18:00", isActive: true },
+            saturday: { arrivalTime: "09:00", departureTime: "18:00", isActive: false },
+            sunday: { arrivalTime: "09:00", departureTime: "18:00", isActive: false }
+          },
+          timeSlotInterval: 30
+        },
+        detailedSchedule: {},
+        autoFillSettings: {
+          enabled: true,
+          defaultSubject: "자습",
+          fillEmptySlots: true
+        },
+        isActive: true,
+        isDefault: true,
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+        userId: userId
+      };
+
+      const timetableRef = await db
+        .collection("users")
+        .doc(userId)
+        .collection("student_timetables")
+        .add(defaultTimetableData);
+
+      timetableId = timetableRef.id;
+
+      logger.info(`기본 시간표 자동 생성 성공: ${timetableId}`, {
+        userId,
+        studentId,
+        studentName: newStudent.name
+      });
+    } catch (timetableError) {
+      // 시간표 생성 실패 시 학생 데이터 롤백
+      logger.error(`시간표 자동 생성 실패, 학생 데이터 롤백 시작: ${studentId}`, timetableError);
+
+      await db
+        .collection("users")
+        .doc(userId)
+        .collection("students")
+        .doc(studentId)
+        .delete();
+
+      logger.info(`학생 데이터 롤백 완료: ${studentId}`);
+
+      throw new HttpsError(
+        "internal",
+        "시간표 생성 중 오류가 발생하여 학생 생성이 취소되었습니다.",
+        { originalError: timetableError instanceof Error ? timetableError.message : "Unknown error" }
+      );
+    }
+
+    // 학생 PIN 자동 생성
+    let generatedPin: string | null = null;
+    try {
+      const uniquePin = await generateUniquePin(userId);
+      await createStudentPin(userId, studentId, newStudent.name, uniquePin);
+      generatedPin = uniquePin;
+
+      logger.info(`PIN 자동 생성 성공: ${studentId}`, {
+        userId,
+        studentId,
+        studentName: newStudent.name,
+        pin: uniquePin
+      });
+    } catch (pinError) {
+      // PIN 생성 실패 시 시간표 + 학생 데이터 롤백
+      logger.error(`PIN 자동 생성 실패, 시간표 및 학생 데이터 롤백 시작: ${studentId}`, pinError);
+
+      // 시간표 삭제
+      if (timetableId) {
+        await db
+          .collection("users")
+          .doc(userId)
+          .collection("student_timetables")
+          .doc(timetableId)
+          .delete();
+        logger.info(`시간표 롤백 완료: ${timetableId}`);
+      }
+
+      // 학생 삭제
+      await db
+        .collection("users")
+        .doc(userId)
+        .collection("students")
+        .doc(studentId)
+        .delete();
+      logger.info(`학생 데이터 롤백 완료: ${studentId}`);
+
+      throw new HttpsError(
+        "internal",
+        "PIN 생성 중 오류가 발생하여 학생 생성이 취소되었습니다.",
+        { originalError: pinError instanceof Error ? pinError.message : "Unknown error" }
+      );
+    }
+
     return {
       success: true,
-      data: newStudent
+      data: newStudent,
+      timetableId: timetableId,
+      pin: generatedPin
     };
   } catch (error) {
     logger.error("학생 생성 실패:", error);
-    
+
     if (error instanceof HttpsError) {
       throw error;
     }
-    
+
     throw new HttpsError("internal", "학생 생성 중 오류가 발생했습니다.");
   }
 });
@@ -200,30 +412,17 @@ export const createStudent = onCall({
 /**
  * 학생 목록 조회
  */
-export const getStudents = onRequest(async (request, response) => {
-  // CORS 헤더 설정
-  response.set("Access-Control-Allow-Origin", "*");
-  response.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  response.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  
-  // OPTIONS 요청 처리 (Preflight)
-  if (request.method === "OPTIONS") {
-    response.status(204).send("");
-    return;
-  }
-
+export const getStudents = onCall({
+  cors: true
+}, async (request) => {
   try {
-    const authHeader = request.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      response.status(401).json({ error: "인증이 필요합니다." });
-      return;
+    const { auth } = request;
+
+    if (!auth) {
+      throw new HttpsError("unauthenticated", "인증이 필요합니다.");
     }
 
-    const token = authHeader.split("Bearer ")[1];
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const admin = require("firebase-admin");
-    const decodedToken = await admin.auth().verifyIdToken(token);
-    const userId = decodedToken.uid;
+    const userId = auth.uid;
 
     // 학생 목록 조회 (활성 상태만)
     const studentsSnapshot = await db
@@ -246,14 +445,16 @@ export const getStudents = onRequest(async (request, response) => {
 
     logger.info(`학생 목록 조회 성공: ${students.length}명`, { userId });
 
-    response.json({
+    return {
       success: true,
       data: students
-    });
+    };
   } catch (error) {
     logger.error("학생 목록 조회 실패:", error);
-    response.status(500).json({ 
-      error: "학생 목록 조회 중 오류가 발생했습니다.",
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "학생 목록 조회 중 오류가 발생했습니다.", {
       details: error instanceof Error ? error.message : "알 수 없는 오류"
     });
   }

@@ -16,9 +16,16 @@ import {
   getCurrentKoreaMinutes,
   getTodayInKorea,
   parseTimeToMinutes,
-  getDayOfWeek,
+  getCurrentKoreaDayOfWeek,
   type DayOfWeek
 } from "../../utils/timeUtils";
+
+// CORS 설정: 현재 프로젝트의 도메인 허용
+const projectId = process.env.GCLOUD_PROJECT || (process.env.FIREBASE_CONFIG ? JSON.parse(process.env.FIREBASE_CONFIG).projectId : "");
+const corsConfig = projectId ? [
+  `https://${projectId}.web.app`,
+  `https://${projectId}.firebaseapp.com`
+] : true;
 
 // ==================== 타입 정의 ====================";
 
@@ -112,15 +119,98 @@ interface AttendanceStudentPin {
   updatedAt: admin.firestore.Timestamp;
 }
 
+/**
+ * PIN 시도 로그 (Rate Limiting용)
+ *
+ * Firestore 컬렉션: pin_attempt_logs
+ * 용도: Rate Limiting 및 의심스러운 활동 추적
+ *
+ * 필드 구조:
+ * - linkToken: string - 출석 체크 링크 토큰
+ * - success: boolean - PIN 검증 성공 여부
+ * - studentId?: string - 학생 ID (성공 시만 기록)
+ * - timestamp: Timestamp - 시도 시간
+ * - expiresAt: Timestamp - TTL (24시간 후 자동 삭제)
+ */
+
 // ==================== 유틸리티 함수 ====================
 // Note: 시간 관련 함수는 ../utils/timeUtils.ts로 이동됨
+
+/**
+ * PIN 검증 전 Rate Limiting 체크
+ *
+ * 동일 링크에서 짧은 시간 내 너무 많은 실패 시도 방지
+ * 5분 내 20회 이상 실패 시 임시 차단
+ *
+ * @param db Firestore instance
+ * @param linkToken 출석 체크 링크 토큰
+ * @throws HttpsError resource-exhausted - 5분 내 20회 이상 실패 시
+ */
+async function checkRateLimit(
+  db: admin.firestore.Firestore,
+  linkToken: string
+): Promise<void> {
+  const now = admin.firestore.Timestamp.now();
+  const fiveMinutesAgo = admin.firestore.Timestamp.fromMillis(
+    now.toMillis() - 5 * 60 * 1000
+  );
+
+  // 최근 5분간 실패 기록 조회
+  // IMPORTANT: Firestore requires equality filters BEFORE range filters
+  // Index order: linkToken (ASC) → success (ASC) → timestamp (DESC)
+  const recentFailures = await db
+    .collection("pin_attempt_logs")
+    .where("linkToken", "==", linkToken)
+    .where("success", "==", false)
+    .where("timestamp", ">", fiveMinutesAgo)
+    .get();
+
+  // 5분 내 20회 이상 실패 시 임시 차단
+  if (recentFailures.size >= 20) {
+    throw new HttpsError(
+      "resource-exhausted",
+      "너무 많은 실패 시도가 있었습니다. 5분 후 다시 시도하세요."
+    );
+  }
+}
+
+/**
+ * PIN 시도 로그 기록
+ *
+ * 성공/실패 여부를 로그에 기록하여 Rate Limiting에 활용
+ * 24시간 후 자동 삭제 (Firestore TTL 정책)
+ *
+ * @param db Firestore instance
+ * @param linkToken 출석 체크 링크 토큰
+ * @param success PIN 검증 성공 여부
+ * @param studentId 학생 ID (성공 시만 기록)
+ */
+async function logPinAttempt(
+  db: admin.firestore.Firestore,
+  linkToken: string,
+  success: boolean,
+  studentId?: string
+): Promise<void> {
+  const now = admin.firestore.Timestamp.now();
+  const expiresAt = admin.firestore.Timestamp.fromMillis(
+    now.toMillis() + 24 * 60 * 60 * 1000 // 24시간 후
+  );
+
+  await db.collection("pin_attempt_logs").add({
+    linkToken,
+    success,
+    studentId: studentId || null,
+    timestamp: now,
+    expiresAt
+  });
+}
 
 // ==================== PIN 관리 Functions ====================
 
 /**
  * 학생 PIN 생성
  */
-export const generateStudentPin = onCall(async (request) => {
+export const generateStudentPin = onCall({ cors: corsConfig }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "인증이 필요합니다.");
   }
@@ -155,21 +245,22 @@ export const generateStudentPin = onCall(async (request) => {
 
     const studentName = studentDoc.data()?.name || "";
 
-    // PIN 중복 확인 (같은 사용자 내)
-    const pinsSnapshot = await db
+    // ✅ 개선: actualPin으로 중복 검증 (쿼리 1회, bcrypt 연산 불필요)
+    const duplicateCheck = await db
       .collection("users")
       .doc(userId)
       .collection("attendance_student_pins")
+      .where("actualPin", "==", pin)
+      .where("isActive", "==", true)
+      .limit(1)
       .get();
 
-    for (const doc of pinsSnapshot.docs) {
-      const data = doc.data() as AttendanceStudentPin;
-      if (data.isActive && doc.id !== studentId) {
-        const isMatch = await bcrypt.compare(pin, data.pinHash);
-        if (isMatch) {
-          throw new HttpsError("already-exists", "이미 사용 중인 PIN입니다. 다른 PIN을 선택해주세요.");
-        }
-      }
+    // 자기 자신이 아닌 다른 학생이 이미 사용 중인 경우
+    if (!duplicateCheck.empty && duplicateCheck.docs[0].id !== studentId) {
+      throw new HttpsError(
+        "already-exists",
+        "이미 사용 중인 PIN입니다. 다른 PIN을 선택해주세요."
+      );
     }
 
     // PIN 해싱
@@ -216,7 +307,7 @@ export const generateStudentPin = onCall(async (request) => {
 /**
  * 학생 PIN 변경
  */
-export const updateStudentPin = onCall(async (request) => {
+export const updateStudentPin = onCall({ cors: corsConfig }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "인증이 필요합니다.");
   }
@@ -249,21 +340,19 @@ export const updateStudentPin = onCall(async (request) => {
 
     const existingPin = pinDoc.data() as AttendanceStudentPin;
 
-    // PIN 중복 확인
-    const pinsSnapshot = await db
+    // ✅ 개선: actualPin으로 중복 검증 (쿼리 1회, bcrypt 연산 불필요)
+    const duplicateCheck = await db
       .collection("users")
       .doc(userId)
       .collection("attendance_student_pins")
+      .where("actualPin", "==", newPin)
+      .where("isActive", "==", true)
+      .limit(1)
       .get();
 
-    for (const doc of pinsSnapshot.docs) {
-      const data = doc.data() as AttendanceStudentPin;
-      if (data.isActive && doc.id !== studentId) {
-        const isMatch = await bcrypt.compare(newPin, data.pinHash);
-        if (isMatch) {
-          throw new HttpsError("already-exists", "이미 사용 중인 PIN입니다.");
-        }
-      }
+    // 자기 자신이 아닌 다른 학생이 이미 사용 중인 경우
+    if (!duplicateCheck.empty && duplicateCheck.docs[0].id !== studentId) {
+      throw new HttpsError("already-exists", "이미 사용 중인 PIN입니다.");
     }
 
     // 새 PIN 해싱
@@ -306,7 +395,7 @@ export const updateStudentPin = onCall(async (request) => {
 /**
  * PIN 잠금 해제
  */
-export const unlockStudentPin = onCall(async (request) => {
+export const unlockStudentPin = onCall({ cors: corsConfig }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "인증이 필요합니다.");
   }
@@ -356,7 +445,7 @@ export const unlockStudentPin = onCall(async (request) => {
 /**
  * 출석 체크 링크 생성
  */
-export const createAttendanceCheckLink = onCall(async (request) => {
+export const createAttendanceCheckLink = onCall({ cors: corsConfig }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "인증이 필요합니다.");
   }
@@ -442,7 +531,7 @@ export const createAttendanceCheckLink = onCall(async (request) => {
 /**
  * 출석 체크 링크 목록 조회
  */
-export const getAttendanceCheckLinks = onCall(async (request) => {
+export const getAttendanceCheckLinks = onCall({ cors: corsConfig }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "인증이 필요합니다.");
   }
@@ -476,7 +565,7 @@ export const getAttendanceCheckLinks = onCall(async (request) => {
 /**
  * PIN으로 출석/하원 체크
  */
-export const checkAttendanceByPin = onCall(async (request) => {
+export const checkAttendanceByPin = onCall({ cors: corsConfig }, async (request) => {
   const { linkToken, pin } = request.data;
 
   if (!linkToken || !pin) {
@@ -485,6 +574,9 @@ export const checkAttendanceByPin = onCall(async (request) => {
 
   try {
     const db = admin.firestore();
+
+    // ✅ 0. Rate Limiting 체크 (먼저 실행하여 과도한 시도 차단)
+    await checkRateLimit(db, linkToken);
 
     // ===== 1. 링크 토큰 조회 (컬렉션 그룹 쿼리) =====
     const linkSnapshot = await db
@@ -555,15 +647,21 @@ export const checkAttendanceByPin = onCall(async (request) => {
 
     // PIN이 매치되지 않은 경우
     if (!matchedPin || !matchedPinRef) {
+      // ✅ 실패 로그 기록
+      await logPinAttempt(db, linkToken, false);
       throw new HttpsError("invalid-argument", "잘못된 PIN입니다.");
     }
 
     const studentId = matchedPin.studentId;
     const studentName = matchedPin.studentName;
 
+    // ✅ 성공 로그 기록
+    await logPinAttempt(db, linkToken, true, studentId);
+
     // PIN 성공: failedAttempts 초기화
     await matchedPinRef.update({
       failedAttempts: 0,
+      lastUsedAt: admin.firestore.Timestamp.now(),
       updatedAt: admin.firestore.Timestamp.now()
     });
 
@@ -780,7 +878,7 @@ export const checkAttendanceByPin = onCall(async (request) => {
 /**
  * 학생 출석 기록 조회
  */
-export const getStudentAttendanceRecords = onCall(async (request) => {
+export const getStudentAttendanceRecords = onCall({ cors: corsConfig }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "인증이 필요합니다.");
   }
@@ -828,7 +926,7 @@ export const getStudentAttendanceRecords = onCall(async (request) => {
 /**
  * 출석 상태 수동 변경 (관리자)
  */
-export const updateAttendanceStatus = onCall(async (request) => {
+export const updateAttendanceStatus = onCall({ cors: corsConfig }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "인증이 필요합니다.");
   }
@@ -893,7 +991,7 @@ export const updateAttendanceStatus = onCall(async (request) => {
  * 💡 대안: 프론트엔드에서 getStudentAttendanceRecords({ seatLayoutId, startDate: today, endDate: today })로
  * 기존 함수를 재사용하는 것도 가능. 하지만 편의성을 위해 전용 함수 제공
  */
-export const getTodayAttendanceRecords = onCall(async (request) => {
+export const getTodayAttendanceRecords = onCall({ cors: corsConfig }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "인증이 필요합니다.");
   }
@@ -937,7 +1035,7 @@ export const getTodayAttendanceRecords = onCall(async (request) => {
 /**
  * 출석 기록 상세 조회
  */
-export const getAttendanceRecord = onCall(async (request) => {
+export const getAttendanceRecord = onCall({ cors: corsConfig }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "인증이 필요합니다.");
   }
@@ -982,7 +1080,7 @@ export const getAttendanceRecord = onCall(async (request) => {
 /**
  * 학생 PIN 정보 조회
  */
-export const getStudentPin = onCall(async (request) => {
+export const getStudentPin = onCall({ cors: corsConfig }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "인증이 필요합니다.");
   }
@@ -1031,7 +1129,7 @@ export const getStudentPin = onCall(async (request) => {
 /**
  * 출석 체크 링크 비활성화
  */
-export const deactivateAttendanceCheckLink = onCall(async (request) => {
+export const deactivateAttendanceCheckLink = onCall({ cors: corsConfig }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "인증이 필요합니다.");
   }
@@ -1080,7 +1178,7 @@ export const deactivateAttendanceCheckLink = onCall(async (request) => {
  *
  * 비활성화된 링크를 다시 활성화합니다.
  */
-export const activateAttendanceCheckLink = onCall(async (request) => {
+export const activateAttendanceCheckLink = onCall({ cors: corsConfig }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "인증이 필요합니다.");
   }
@@ -1129,7 +1227,7 @@ export const activateAttendanceCheckLink = onCall(async (request) => {
  *
  * 링크를 완전히 삭제합니다 (되돌릴 수 없음).
  */
-export const deleteAttendanceCheckLink = onCall(async (request) => {
+export const deleteAttendanceCheckLink = onCall({ cors: corsConfig }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "인증이 필요합니다.");
   }
@@ -1176,7 +1274,7 @@ export const deleteAttendanceCheckLink = onCall(async (request) => {
  *
  * checkAttendanceByPin과 유사하지만 PIN 검증 없이 관리자가 직접 처리
  */
-export const manualCheckIn = onCall(async (request) => {
+export const manualCheckIn = onCall({ cors: corsConfig }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "인증이 필요합니다.");
   }
@@ -1194,31 +1292,30 @@ export const manualCheckIn = onCall(async (request) => {
     const today = getTodayInKorea();
     const currentMinutes = getCurrentKoreaMinutes();
 
-    // ===== 1. 슬롯 기반 조회: scheduled 상태 레코드 조회 =====
+    // ===== 1. 슬롯 기반 조회: scheduled 또는 not_arrived 상태 레코드 조회 =====
     const applicableSlotsSnapshot = await db
       .collection("users")
       .doc(userId)
       .collection("student_attendance_records")
       .where("studentId", "==", studentId)
       .where("date", "==", today)
-      .where("status", "in", ["scheduled", "checked_in"])
+      .where("status", "in", ["scheduled", "not_arrived"]) // ✅ not_arrived 추가
       .get();
 
     if (applicableSlotsSnapshot.empty) {
       throw new HttpsError("not-found", "오늘 출석할 수업이 없습니다.");
     }
 
-    // ===== 2. 현재 시간에 가장 가까운 scheduled 슬롯 찾기 =====
+    // ===== 2. 현재 시간에 가장 가까운 슬롯 찾기 =====
     let targetRecord: any = null;
     let minTimeDiff = Infinity;
 
     for (const doc of applicableSlotsSnapshot.docs) {
       const record = doc.data();
-      if (record.status !== "scheduled") continue; // scheduled만 체크인 가능
-
       const slotStartMinutes = parseTimeToMinutes(record.expectedArrivalTime);
       const slotEndMinutes = parseTimeToMinutes(record.expectedDepartureTime);
 
+      // 슬롯 시간 범위 내 또는 ±30분 이내
       if (currentMinutes >= slotStartMinutes - 30 &&
           currentMinutes <= slotEndMinutes + 30) {
         const timeDiff = Math.abs(currentMinutes - slotStartMinutes);
@@ -1234,33 +1331,65 @@ export const manualCheckIn = onCall(async (request) => {
         "현재 시간에 해당하는 수업이 없습니다.");
     }
 
-    // ===== 3. 체크인 처리 =====
-    const recordRef = targetRecord.ref as admin.firestore.DocumentReference;
-    const recordData = targetRecord.data;
-    const timestamp = admin.firestore.Timestamp.now();
-    const expectedMinutes = parseTimeToMinutes(recordData.expectedArrivalTime);
-    const isLate = currentMinutes > expectedMinutes + 10;
+    // ===== 3. 트랜잭션으로 체크인 처리 =====
+    const result = await db.runTransaction(async (transaction) => {
+      const recordRef = targetRecord.ref as admin.firestore.DocumentReference;
 
-    const updateData: any = {
-      actualArrivalTime: timestamp,
-      status: "checked_in",
-      isLate,
-      checkInMethod: "manual",
-      updatedAt: timestamp
-    };
+      // 최신 상태 재확인
+      const currentRecordDoc = await transaction.get(recordRef);
+      const currentRecordData = currentRecordDoc.data();
 
-    if (isLate) {
-      updateData.lateMinutes = currentMinutes - expectedMinutes;
-    }
+      if (!currentRecordData) {
+        throw new HttpsError("not-found", "출석 레코드를 찾을 수 없습니다.");
+      }
 
-    await recordRef.update(updateData);
+      // 상태 검증
+      if (currentRecordData.status !== "scheduled" &&
+          currentRecordData.status !== "not_arrived") {
+        throw new HttpsError(
+          "failed-precondition",
+          `현재 상태(${currentRecordData.status})에서는 체크인할 수 없습니다.`
+        );
+      }
 
-    return {
-      success: true,
-      action: "checked_in",
-      message: `${recordData.timeSlotSubject || recordData.studentName} 수동 체크인 완료`,
-      data: { ...recordData, ...updateData }
-    };
+      // 지각 계산
+      const expectedMinutes = parseTimeToMinutes(currentRecordData.expectedArrivalTime);
+      const isLate = currentMinutes > expectedMinutes + 10;
+
+      const timestamp = admin.firestore.Timestamp.now();
+      const updateData: any = {
+        actualArrivalTime: timestamp,
+        status: "checked_in",
+        isLate,
+        checkInMethod: "manual",
+        updatedAt: timestamp
+      };
+
+      if (isLate) {
+        updateData.lateMinutes = currentMinutes - expectedMinutes;
+      }
+
+      // not_arrived에서 복구된 경우
+      if (currentRecordData.status === "not_arrived") {
+        const recoveryNote = "관리자 수동 복구: 유예 기간 내 체크인";
+        updateData.notes = currentRecordData.notes ?
+          `${currentRecordData.notes}\n${recoveryNote}` : recoveryNote;
+      }
+
+      // 트랜잭션으로 업데이트
+      transaction.update(recordRef, updateData);
+
+      return {
+        success: true,
+        action: "checked_in",
+        message: `${currentRecordData.timeSlotSubject || currentRecordData.studentName} 수동 체크인 완료${isLate ? " (지각)" : ""}${
+          currentRecordData.status === "not_arrived" ? " - 자동 복구됨" : ""
+        }`,
+        data: { ...currentRecordData, ...updateData }
+      };
+    });
+
+    return result;
   } catch (error) {
     console.error("수동 체크인 오류:", error);
     if (error instanceof HttpsError) {
@@ -1275,7 +1404,7 @@ export const manualCheckIn = onCall(async (request) => {
  *
  * checkAttendanceByPin의 체크아웃 로직과 유사하지만 PIN 검증 없이 관리자가 직접 처리
  */
-export const manualCheckOut = onCall(async (request) => {
+export const manualCheckOut = onCall({ cors: corsConfig }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "인증이 필요합니다.");
   }
@@ -1371,7 +1500,7 @@ export const manualCheckOut = onCall(async (request) => {
  * - 출석 기록이 있으면 상태 검증 후 업데이트
  * - not_arrived 상태에서만 결석 처리 가능
  */
-export const markStudentAbsent = onCall(async (request) => {
+export const markStudentAbsent = onCall({ cors: corsConfig }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "인증이 필요합니다.");
   }
@@ -1428,7 +1557,7 @@ export const markStudentAbsent = onCall(async (request) => {
 
     const assignment = assignmentSnapshot.docs[0].data();
     const today = getTodayInKorea();
-    const dayOfWeek = getDayOfWeek(new Date());
+    const dayOfWeek = getCurrentKoreaDayOfWeek();
 
     // seatNumber Fallback
     let seatNumber = assignment.seatNumber;

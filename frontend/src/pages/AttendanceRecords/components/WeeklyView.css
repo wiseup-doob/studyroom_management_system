@@ -1,0 +1,175 @@
+/* WeeklyView.css */
+
+.weekly-view {
+  padding: 24px;
+}
+
+.wv-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.wv-date-range {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.wv-navigation {
+  display: flex;
+  gap: 8px;
+}
+
+.wv-nav-btn {
+  padding: 8px 16px;
+  background: white;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.wv-nav-btn:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.wv-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 16px;
+}
+
+.wv-day-card {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.2s;
+  min-height: 240px;
+}
+
+.wv-day-card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.wv-day-card--today {
+  border-color: #3b82f6;
+  border-width: 3px;
+}
+
+.wv-day-header {
+  text-align: center;
+  width: 100%;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.wv-day-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.wv-day-date {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.wv-status-icon {
+  margin: 8px 0;
+}
+
+.wv-status-text {
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.wv-times {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.wv-time {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  padding: 4px 8px;
+  background: white;
+  border-radius: 4px;
+}
+
+.wv-time-label {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.wv-time-value {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.wv-detail {
+  font-size: 11px;
+  color: #64748b;
+  text-align: center;
+  padding: 6px 8px;
+  background: white;
+  border-radius: 4px;
+  width: 100%;
+  margin-top: auto;
+}
+
+/* 반응형 */
+@media (max-width: 1400px) {
+  .wv-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 1024px) {
+  .wv-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .weekly-view {
+    padding: 16px;
+  }
+
+  .wv-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .wv-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .wv-day-card {
+    padding: 16px;
+    min-height: 200px;
+  }
+}

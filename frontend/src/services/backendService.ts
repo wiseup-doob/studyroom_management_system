@@ -147,7 +147,14 @@ class BackendService {
       timeSlotIntervalOptions?: number[];
     };
   }): Promise<any> {
-    return this.call('createStudentTimetableEditLink', data);
+    try {
+      const createLinkFunction = httpsCallable(functions, 'createStudentTimetableEditLink');
+      const result = await createLinkFunction(data);
+      return result.data;
+    } catch (error) {
+      console.error('링크 생성 실패:', error);
+      throw error;
+    }
   }
 
   /**
@@ -158,30 +165,10 @@ class BackendService {
   }): Promise<any> {
     try {
       console.log('getSharedTimetableData 호출 시작:', data);
-
-      // GET 요청으로 쿼리 파라미터 사용
-      const functionUrl = `https://getSharedTimetableData-rwsdour62q-du.a.run.app?token=${encodeURIComponent(data.shareToken)}`;
-      console.log('Function URL:', functionUrl);
-
-      const response = await fetch(functionUrl, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      console.log('Response Status:', response.status, response.statusText);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Response Error:', errorText);
-        throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
-      }
-
-      const result = await response.json();
-      console.log('getSharedTimetableData 호출 성공:', result);
-      
-      return result;
+      const getDataFunction = httpsCallable(functions, 'getSharedTimetableData');
+      const result = await getDataFunction(data);
+      console.log('getSharedTimetableData 호출 성공:', result.data);
+      return result.data;
     } catch (error) {
       console.error('getSharedTimetableData 호출 실패:', error);
       throw error;
@@ -200,25 +187,10 @@ class BackendService {
     updatedBasicSchedule?: any;
     basicScheduleChanges?: any;
   }): Promise<any> {
-    // onRequest 타입으로 직접 HTTP 호출
-    const functionUrl = 'https://asia-northeast3-studyroommanagementsystemtest.cloudfunctions.net/updateEditState';
-    
     try {
-      const response = await fetch(functionUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || '편집 상태 업데이트 실패');
-      }
-
-      const result = await response.json();
-      return result;
+      const updateFunction = httpsCallable(functions, 'updateEditState');
+      const result = await updateFunction(data);
+      return result.data;
     } catch (error) {
       console.error('편집 상태 업데이트 실패:', error);
       throw error;
@@ -233,30 +205,10 @@ class BackendService {
   }): Promise<any> {
     try {
       console.log('getEditState 호출 시작:', data);
-
-      // GET 요청으로 쿼리 파라미터 사용 (getSharedTimetableData와 동일한 방식)
-      const functionUrl = `https://asia-northeast3-studyroommanagementsystemtest.cloudfunctions.net/getEditState?token=${encodeURIComponent(data.shareToken)}`;
-      console.log('Function URL:', functionUrl);
-
-      const response = await fetch(functionUrl, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      console.log('Response Status:', response.status, response.statusText);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Response Error:', errorText);
-        throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
-      }
-
-      const result = await response.json();
-      console.log('getEditState 호출 성공:', result);
-      
-      return result;
+      const getStateFunction = httpsCallable(functions, 'getEditState');
+      const result = await getStateFunction(data);
+      console.log('getEditState 호출 성공:', result.data);
+      return result.data;
     } catch (error) {
       console.error('getEditState 호출 실패:', error);
       throw error;

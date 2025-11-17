@@ -48,6 +48,18 @@ firebase deploy --only functions  # Deploy backend only
 ./deploy.sh             # Interactive deployment script with environment selection
 ```
 
+### Local Development Setup
+```bash
+# Terminal 1: Start Firebase emulators
+firebase emulators:start
+
+# Terminal 2: Start frontend dev server
+cd frontend && npm run dev
+
+# Terminal 3 (optional): Watch functions for changes
+cd functions && npm run build:watch
+```
+
 ## Architecture
 
 ### Multi-Environment Setup
@@ -59,6 +71,9 @@ firebase deploy --only functions  # Deploy backend only
 - **React 19** with TypeScript and Vite 7+
 - **Path aliases**: `@/*` maps to `src/*`
 - **Routing**: React Router DOM v7+ with authentication-based protected routes
+  - Protected routes require authentication and redirect to `/login` if not authenticated
+  - Public routes: `/login`, `/attendance-check/:token`, `/student-timetable-edit/:token`, `/submission-complete`
+  - All other routes are protected and require user authentication
 - **State Management**:
   - React Context for authentication
   - Zustand for UI state (attendance UI store)
@@ -74,6 +89,7 @@ firebase deploy --only functions  # Deploy backend only
 - `studentTimetableService.ts`: Student timetable functionality
 - `editLinkService.ts`: Shared edit link management
 - `userProfileService.ts`: User profile operations
+- `attendanceService.ts`: Student attendance management and operations
 
 **Note**: Several services have been removed or consolidated in recent refactoring:
 - ❌ `apiService.ts` - Removed
@@ -92,16 +108,17 @@ firebase deploy --only functions  # Deploy backend only
 - `index.ts`: Main type exports
 
 ### Component Structure
-- **Layout components**: `MainLayout.tsx`, `MainHeader.tsx`, `Sidebar.tsx` in `components/Layout/` or `components/common/Sidebar/`
+- **Layout components**: `MainLayout.tsx`, `MainHeader.tsx` in `components/layout/`, `Sidebar.tsx` in `components/common/Sidebar/`
   - MainLayout includes sidebar and main content areas
   - MainHeader provides navigation and user profile
   - Sidebar provides navigation menu
-- **Domain components**: Specialized components in `components/domain/Attendance/`
-  - Comprehensive attendance UI components (SeatingChart, Seat, AssignSeatModal, etc.)
+- **Domain components**: Specialized components in `components/domain/`
+  - `Attendance/`: Comprehensive attendance UI with 37 components (SeatingChart, Seat, AssignSeatModal, StudentDetailSidebar, etc.)
+  - `Student/`: Student-specific components
   - Student assignment and PIN management panels
   - Attendance records and statistics components
 - **Common components**: Reusable UI components in `components/common/`
-- **Buttons**: Reusable button components in `components/buttons/`
+- **Other components**: `auth/`, `notifications/`, `security/` for specific concerns
 
 ### Custom Hooks (`frontend/src/hooks/`)
 - `useAttendanceQueries.ts`: TanStack Query hooks for attendance data
@@ -111,32 +128,43 @@ firebase deploy --only functions  # Deploy backend only
 - `useAttendanceUIStore.ts`: Zustand store for attendance UI state
 
 ### Current Pages (`frontend/src/pages/`)
-- **Home**: Main dashboard and entry point
-- **Login**: Authentication page
-- **Student**: Student management functionality
-- **TimeTable**: Schedule and timetable management
+- **Home** (`/home`): Main dashboard and entry point
+- **Login** (`/login`): Authentication page (public)
+- **Student** (`/student`): Student management functionality
+- **TimeTable** (`/timetable`): Schedule and timetable management
   - Complex timetable system with modular components in `pages/TimeTable/components/`
   - Student list panel, basic schedule panel, student timetable panel
   - Time slot editing and timetable creation modals
-- **StudentTimetableSharedEdit**: Shared student timetable editing functionality
-- **Attendance**: Student attendance management with seat layouts and PIN-based check-in (active development)
-- **SubmissionComplete**: Submission completion confirmation page
+- **Attendance** (`/attendance`): Slot-based student attendance management with seat layouts, PIN-based check-in, and automated batch jobs
+- **AttendanceRecords** (`/attendance-records`): Monthly/weekly attendance history viewer with statistics
+- **AttendanceCheckIn** (`/attendance-check/:token`): Public PIN entry page for students (unprotected)
+- **StudentTimetableSharedEdit** (`/student-timetable-edit/:token`): Shared student timetable editing functionality (public)
+- **SubmissionComplete** (`/submission-complete`): Submission completion confirmation page
 
 ### Backend Architecture (`functions/src/`)
 - **Personal modules**: User-specific functionality in `modules/personal/`
   - `userProfile.ts`: User profile management and data backup
   - `attendanceManagement.ts`: Check-in/out and attendance tracking (admin self-check)
-  - `studentAttendanceManagement.ts`: **NEW** - Student attendance system with PIN-based check-in/out
-  - `shareScheduleManagement.ts`: Schedule sharing and collaboration
-  - `seatManagement.ts`: Seat assignment and layout management
+  - `studentAttendanceManagement.ts`: Student attendance system with PIN-based check-in/out (51 KB)
+  - `shareScheduleManagement.ts`: Schedule sharing and collaboration (85 KB)
+  - `seatManagement.ts`: Seat assignment and layout management (24 KB)
   - `settingsManagement.ts`: User settings and preferences
-  - `studentManagement.ts`: Student data management (CRUD operations)
-  - `studentTimetableManagement.ts`: Student-specific timetable operations
+  - `studentManagement.ts`: Student data management (CRUD operations, 28 KB)
+  - `studentTimetableManagement.ts`: Student-specific timetable operations (27 KB)
   - `index.ts`: Exports all personal module functions
-- **Utils**: Helper modules in `modules/utils/`
+- **Admin modules**: Admin-level functionality in `modules/admin/`
+  - `dataMigration.ts`: Data migration utilities for schema updates
+- **Scheduled functions**: Automated batch jobs in `scheduled/`
+  - `createDailyAttendanceRecords.ts`: Runs daily at 02:00 Asia/Seoul - creates `scheduled` status records for all active students
+  - `markNotArrivedAtStartTime.ts`: Runs every 30 minutes (09:00-23:00) - marks students as `not_arrived` if they miss class start
+  - `markAbsentUnexcused.ts`: Runs every 10 minutes - converts `not_arrived` to `absent_unexcused` after grace period
+- **Triggers**: Firestore event triggers in `triggers/`
+  - `onTimetableUpdate.ts`: Auto-syncs seat assignment cache when student timetables change
+- **Utils**: Helper modules in `utils/`
   - `auth.ts`: Authentication middleware and user validation
   - `response.ts`: Standardized response formatting
   - `validation.ts`: Input validation utilities
+  - `timeUtils.ts`: Time zone and date utilities for Korea timezone
 - **Types**: Backend type definitions in `types/index.ts`
 
 **Important**: All Cloud Functions must validate `request.auth.uid` matches the target `userId` to maintain data isolation.
@@ -174,7 +202,7 @@ Each environment file needs:
 - **Authentication**: Uses Firebase Auth with user-specific data access (no custom claims needed)
 - **Data Structure**: Firestore structure uses `/users/{userId}` for complete user data isolation
 - **Error Handling**: Built into component-level error boundaries and service-level error management
-- **Testing**: Firebase emulators required for local development - no formal testing framework currently configured
+- **Testing**: Firebase emulators used for local development - no formal testing framework (Jest/Vitest) currently configured
 - **State Management**:
   - TanStack Query for server state, caching, and mutations
   - Zustand for client-side UI state
@@ -184,7 +212,7 @@ Each environment file needs:
 - **Development**: Auto-open browser on port 3000, hot module replacement
 - **QR Codes**: Uses `qrcode.react` library for generating QR codes (attendance check links)
 - **Icons**: Uses `@heroicons/react` for UI icons
-- **Current State**: Core features stable, attendance system in active development
+- **Current State**: Core features stable, slot-based attendance system implemented with automated batch jobs
 
 ## Current Development Focus
 
@@ -193,37 +221,39 @@ The system is a personal user-based management system:
 - **Personal Management**: Each authenticated user manages their own students, schedules, and attendance
 - **Data Isolation**: Complete separation of data between users using Firestore security rules
 - **User-Centric Architecture**: Direct user ownership of all data and operations
-- **Active Features**: Student management, timetable functionality, shared timetable editing, and **student attendance system (in development)**
+- **Active Features**: Student management, timetable functionality, shared timetable editing, and slot-based student attendance system
 - **Backend Integration**: Comprehensive Firebase Functions for all user operations
 
-### Attendance System (Active Development)
+### Attendance System
 
-A comprehensive student attendance management system with the following features:
+A comprehensive slot-based student attendance management system with the following features:
+- **Slot-based Architecture**: Individual attendance records per class/study session (not session-based)
+- **Automated Record Creation**: Daily 2 AM batch job creates `scheduled` status records for all students
 - **PIN-based Check-in/out**: Students use unique 4-6 digit PINs for self-service attendance
 - **Seat Layout Integration**: Visual seat management with group-based layouts (rows × columns)
 - **Attendance Tracking**: Automated tracking of arrival/departure times with late/early-leave detection
-- **Timetable Integration**: Uses `student_timetables.basicSchedule.dailySchedules` for expected times
+- **Timetable Integration**: Uses `student_timetables.detailedSchedule.timeSlots` for slot-based tracking
+- **Automated Absence Marking**: Scheduled jobs automatically mark no-shows as `not_arrived` or `absent_unexcused`
 - **Security**: bcrypt hashing for PINs, automatic locking after 5 failed attempts
 - **Real-time Updates**: Live attendance status using Firestore subscriptions
-- **Design Document**: See `ATTENDANCE_DATABASE_DESIGN.md` for complete system architecture
-- **Implementation Plans**: See `ATTENDANCE_FRONTEND_IMPLEMENTATION_PLAN.md` and `ATTENDANCE_INTEGRATION_PLAN.md`
+- **Design Documents**: See `ATTENDANCE_IMPLEMENTATION_STATUS.md` and `ATTENDANCE_SLOT_IMPLEMENTATION_PLAN.md`
 
 **Key Collections** (all under `/users/{userId}/`):
-- `student_attendance_records`: Daily attendance records with 5 status types
+- `student_attendance_records`: Slot-based attendance records with 6 status types (`scheduled`, `checked_in`, `checked_out`, `not_arrived`, `absent_excused`, `absent_unexcused`)
 - `attendance_check_links`: Shareable links with UUID tokens for PIN entry
 - `attendance_student_pins`: Hashed student PINs with security features
 - `seat_layouts`: Extended with optional `groups` field for attendance layouts
 - `seat_assignments`: Extended with student info and expected schedules
 
-**Current Status**: Phase 1-3 deployment completed, see `PHASE_1_2_3_DEPLOYMENT_SUMMARY.md` for details
+**Current Status**: Slot-based system implemented with automated batch jobs
 
-**Future Architecture**: Plan to migrate from session-based to event-based attendance system (see `EVENT_BASE_ATTENDANCE_PLAN.md`):
-- **Event-based Design**: Moving from fixed session records to flexible event streams
+**Future Architecture**: Plan to migrate from slot-based to event-based attendance system (see `EVENT_BASE_ATTENDANCE_PLAN.md`):
+- **Event-based Design**: Moving from fixed slot records to flexible event streams
 - **Time Range Support**: Enable partial attendance tracking (e.g., absent 09:00-14:00, present 14:00-20:00)
 - **Complex Scenarios**: Support external activities, partial attendance, and multi-segment days
 - **Event Types**: `CHECK_IN`, `CHECK_OUT`, `MARK_ABSENT`, `START_EXTERNAL`, `END_EXTERNAL`
 - **Status Calculation**: Compute attendance status from event timeline at query time
-- **New Collection**: `/users/{userId}/attendance_events` will replace session-based records
+- **New Collection**: `/users/{userId}/attendance_events` will replace slot-based records
 
 ## Build Process
 

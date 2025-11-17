@@ -7,6 +7,7 @@ export const ROUTES = {
   STUDENT: '/student',
   TIMETABLE: '/timetable',
   ATTENDANCE: '/attendance',
+  ATTENDANCE_RECORDS: '/attendance-records',
 } as const;
 
 // 라우트 메타데이터
@@ -25,6 +26,14 @@ export const ROUTE_META = {
   },
   [ROUTES.TIMETABLE]: {
     title: '시간표',
+    requiresAuth: true,
+  },
+  [ROUTES.ATTENDANCE]: {
+    title: '출석 관리',
+    requiresAuth: true,
+  },
+  [ROUTES.ATTENDANCE_RECORDS]: {
+    title: '출결 기록',
     requiresAuth: true,
   },
 } as const;

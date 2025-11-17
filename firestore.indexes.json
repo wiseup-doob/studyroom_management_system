@@ -329,6 +329,84 @@
           "order": "ASCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "attendance_student_pins",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "actualPin",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isActive",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pin_attempt_logs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "linkToken",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "success",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pin_attempt_logs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "linkToken",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "success",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "student_timetables",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "studentId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "student_attendance_records",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "studentId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "date",
+          "order": "DESCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": [

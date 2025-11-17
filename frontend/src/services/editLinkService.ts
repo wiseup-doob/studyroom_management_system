@@ -4,9 +4,9 @@
  * 편집 링크의 생성, 조회, 관리, 로그 추적 기능을 제공합니다.
  */
 
+import { httpsCallable } from 'firebase/functions';
+import { functions } from './firebase';
 import { convertTimestampToDate } from '../utils/dateConverter';
-
-// backendService는 현재 사용하지 않음 (직접 fetch 사용)
 
 // ==================== 타입 정의 ====================
 
@@ -112,21 +112,9 @@ class EditLinkService {
    */
   async deactivateEditLink(shareToken: string): Promise<void> {
     try {
-      const response = await fetch(`${this.baseUrl}/deactivateEditLink`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${await this.getAuthToken()}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ shareToken })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || '링크 비활성화에 실패했습니다.');
-      }
-
-      const data = await response.json();
+      const deactivateFunction = httpsCallable(functions, 'deactivateEditLink');
+      const result = await deactivateFunction({ shareToken });
+      const data = result.data as any;
       console.log('링크 비활성화 성공:', data.message);
     } catch (error) {
       console.error('링크 비활성화 오류:', error);
@@ -139,21 +127,9 @@ class EditLinkService {
    */
   async activateEditLink(shareToken: string): Promise<void> {
     try {
-      const response = await fetch(`${this.baseUrl}/activateEditLink`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${await this.getAuthToken()}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ shareToken })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || '링크 재활성화에 실패했습니다.');
-      }
-
-      const data = await response.json();
+      const activateFunction = httpsCallable(functions, 'activateEditLink');
+      const result = await activateFunction({ shareToken });
+      const data = result.data as any;
       console.log('링크 재활성화 성공:', data.message);
     } catch (error) {
       console.error('링크 재활성화 오류:', error);
@@ -166,21 +142,9 @@ class EditLinkService {
    */
   async deleteEditLink(shareToken: string): Promise<void> {
     try {
-      const response = await fetch(`${this.baseUrl}/deleteEditLink`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${await this.getAuthToken()}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ shareToken })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || '링크 삭제에 실패했습니다.');
-      }
-
-      const data = await response.json();
+      const deleteFunction = httpsCallable(functions, 'deleteEditLink');
+      const result = await deleteFunction({ shareToken });
+      const data = result.data as any;
       console.log('링크 삭제 성공:', data.message);
     } catch (error) {
       console.error('링크 삭제 오류:', error);

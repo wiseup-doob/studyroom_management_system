@@ -161,47 +161,24 @@ interface ScheduleContribution {
 /**
  * 학생 시간표 편집 링크 생성 (고유성 보장)
  */
-export const createStudentTimetableEditLink = functions.https.onRequest(async (req, res) => {
+export const createStudentTimetableEditLink = onCall({
+  cors: true
+}, async (request) => {
   console.log("createStudentTimetableEditLink 호출됨");
-  console.log("Request Headers:", req.headers);
-  console.log("Request Body:", req.body);
-
-  // CORS 설정
-  res.set("Access-Control-Allow-Origin", "*");
-  res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-
-  if (req.method === "OPTIONS") {
-    res.status(204).send("");
-    return;
-  }
-
-  if (req.method !== "POST") {
-    res.status(405).json({ error: { message: "Method not allowed", status: "INVALID_ARGUMENT" } });
-    return;
-  }
 
   try {
-    // Authorization 헤더에서 토큰 추출
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      console.error("Authorization 헤더가 없거나 형식이 잘못됨:", authHeader);
-      res.status(401).json({ error: { message: "인증이 필요합니다.", status: "UNAUTHENTICATED" } });
-      return;
+    const { auth, data } = request;
+
+    if (!auth) {
+      throw new HttpsError("unauthenticated", "인증이 필요합니다.");
     }
 
-    const idToken = authHeader.split("Bearer ")[1];
-    console.log("ID 토큰 추출됨:", idToken ? "성공" : "실패");
-
-    // Firebase Admin SDK로 토큰 검증
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
     console.log("토큰 검증 성공:", {
-      uid: decodedToken.uid,
-      email: decodedToken.email,
-      email_verified: decodedToken.email_verified
+      uid: auth.uid,
+      email: auth.token.email
     });
 
-    const userId = decodedToken.uid;
+    const userId = auth.uid;
 
     // 요청 데이터 추출
     const {
@@ -211,12 +188,12 @@ export const createStudentTimetableEditLink = functions.https.onRequest(async (r
       title,
       description,
       editPermissions
-    } = req.body.data || req.body;
+    } = data;
 
     if (!studentId || !timetableId) {
-      res.status(400).json({ error: { message: "학생 ID와 시간표 ID가 필요합니다.", status: "INVALID_ARGUMENT" } });
-      return;
+      throw new HttpsError("invalid-argument", "학생 ID와 시간표 ID가 필요합니다.");
     }
+
     const db = admin.firestore();
 
     // 1. 기존 활성 링크 확인 및 비활성화
@@ -264,7 +241,7 @@ export const createStudentTimetableEditLink = functions.https.onRequest(async (r
       .get();
 
     if (!studentDoc.exists) {
-      throw new functions.https.HttpsError("not-found", "학생을 찾을 수 없습니다.");
+      throw new HttpsError("not-found", "학생을 찾을 수 없습니다.");
     }
 
     // 3. 시간표 존재 확인
@@ -276,12 +253,12 @@ export const createStudentTimetableEditLink = functions.https.onRequest(async (r
     const timetableDoc = await timetableRef.get();
 
     if (!timetableDoc.exists) {
-      throw new functions.https.HttpsError("not-found", "학생 시간표를 찾을 수 없습니다.");
+      throw new HttpsError("not-found", "학생 시간표를 찾을 수 없습니다.");
     }
 
     const timetableData = timetableDoc.data();
     if (timetableData?.studentId !== studentId) {
-      throw new functions.https.HttpsError("invalid-argument", "해당 학생의 시간표가 아닙니다.");
+      throw new HttpsError("invalid-argument", "해당 학생의 시간표가 아닙니다.");
     }
 
     // 4. 공유 토큰 및 편집 상태 생성
@@ -401,44 +378,27 @@ export const createStudentTimetableEditLink = functions.https.onRequest(async (r
     };
 
     console.log("링크 생성 성공:", result);
-    res.status(200).json(result);
+    return result;
   } catch (error) {
     console.error("학생 시간표 편집 링크 생성 오류:", error);
-
-    if (error instanceof functions.https.HttpsError) {
-      res.status(400).json({ error: { message: error.message, status: error.code } });
-      return;
+    if (error instanceof HttpsError) {
+      throw error;
     }
-
-    res.status(500).json({ error: { message: "서버 오류가 발생했습니다.", status: "INTERNAL" } });
+    throw new HttpsError("internal", "서버 오류가 발생했습니다.");
   }
 });
 
 /**
  * 편집 상태 업데이트 (Firebase 기반 임시 저장)
  */
-export const updateEditState = functions.https.onRequest(async (req: functions.https.Request, res: any) => {
-  // CORS 설정
-  res.set("Access-Control-Allow-Origin", "*");
-  res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.set("Access-Control-Allow-Headers", "Content-Type");
-  
-  if (req.method === "OPTIONS") {
-    res.status(204).send("");
-    return;
-  }
-  
-  if (req.method !== "POST") {
-    res.status(405).send("Method Not Allowed");
-    return;
-  }
-
+export const updateEditState = onCall({
+  cors: true
+}, async (request) => {
   try {
-    const { shareToken, currentTimetable, changes, updatedBasicSchedule, basicScheduleChanges } = req.body;
+    const { shareToken, currentTimetable, changes, updatedBasicSchedule, basicScheduleChanges } = request.data;
 
     if (!shareToken || !currentTimetable) {
-      res.status(400).json({ error: "필수 데이터가 누락되었습니다." });
-      return;
+      throw new HttpsError("invalid-argument", "필수 데이터가 누락되었습니다.");
     }
 
     const db = admin.firestore();
@@ -451,16 +411,14 @@ export const updateEditState = functions.https.onRequest(async (req: functions.h
       .get();
 
     if (sharedScheduleQuery.empty) {
-      res.status(404).json({ error: "유효하지 않은 링크입니다." });
-      return;
+      throw new HttpsError("not-found", "유효하지 않은 링크입니다.");
     }
 
     const sharedScheduleDoc = sharedScheduleQuery.docs[0];
     const userId = sharedScheduleDoc.ref.parent.parent?.id;
 
     if (!userId) {
-      res.status(500).json({ error: "사용자 정보를 찾을 수 없습니다." });
-      return;
+      throw new HttpsError("internal", "사용자 정보를 찾을 수 없습니다.");
     }
 
     // 편집 상태 조회
@@ -474,8 +432,7 @@ export const updateEditState = functions.https.onRequest(async (req: functions.h
       .get();
 
     if (editStateQuery.empty) {
-      res.status(404).json({ error: "편집 상태를 찾을 수 없습니다." });
-      return;
+      throw new HttpsError("not-found", "편집 상태를 찾을 수 없습니다.");
     }
 
     const editStateDoc = editStateQuery.docs[0];
@@ -483,8 +440,7 @@ export const updateEditState = functions.https.onRequest(async (req: functions.h
     // 만료 확인
     const editStateData = editStateDoc.data();
     if (editStateData.expiresAt && editStateData.expiresAt.toDate() < new Date()) {
-      res.status(410).json({ error: "편집 세션이 만료되었습니다." });
-      return;
+      throw new HttpsError("failed-precondition", "편집 세션이 만료되었습니다.");
     }
 
     // 실제 권한 정보 가져오기 (shared_schedules에서)
@@ -525,18 +481,16 @@ export const updateEditState = functions.https.onRequest(async (req: functions.h
           shareToken: shareToken.substring(0, 8) + "...",
           canEditBasicSchedule: permissions.canEditBasicSchedule
         });
-        res.status(403).json({ error: "기본 스케줄 편집 권한이 없습니다." });
-        return;
+        throw new HttpsError("permission-denied", "기본 스케줄 편집 권한이 없습니다.");
       }
-      
+
       // 요일별 권한 및 시간 제한 검증 (실제 DB 구조 반영)
       for (const [day, dayChanges] of Object.entries(dailyScheduleChanges || {})) {
         const dayPermissions = permissions.dailySchedulePermissions[day as DayOfWeek];
-        
+
         if (!dayPermissions) {
           console.error("요일 권한 정보 없음:", { day, shareToken: shareToken.substring(0, 8) + "..." });
-          res.status(500).json({ error: `${day}의 권한 정보를 찾을 수 없습니다.` });
-          return;
+          throw new HttpsError("internal", `${day}의 권한 정보를 찾을 수 없습니다.`);
         }
 
         const typedDayChanges = dayChanges as {
@@ -569,28 +523,26 @@ export const updateEditState = functions.https.onRequest(async (req: functions.h
             shareToken: shareToken.substring(0, 8) + "...",
             canEditArrivalTime: dayPermissions.canEditArrivalTime
           });
-          res.status(403).json({ error: `${day} 등원 시간 편집 권한이 없습니다.` });
-          return;
+          throw new HttpsError("permission-denied", `${day} 등원 시간 편집 권한이 없습니다.`);
         }
-        
+
         if (typedDayChanges.departureTimeChanged && !dayPermissions.canEditDepartureTime) {
           console.warn(`${day} 하원 시간 편집 권한 없음:`, {
             shareToken: shareToken.substring(0, 8) + "...",
             canEditDepartureTime: dayPermissions.canEditDepartureTime
           });
-          res.status(403).json({ error: `${day} 하원 시간 편집 권한이 없습니다.` });
-          return;
+          throw new HttpsError("permission-denied", `${day} 하원 시간 편집 권한이 없습니다.`);
         }
-        
+
         // 실제 DB 시간 제한 검증
         const { updatedSchedule } = typedDayChanges;
-        
+
         console.log(`${day} 시간 검증:`, {
           arrivalTime: updatedSchedule.arrivalTime,
           departureTime: updatedSchedule.departureTime,
           isActive: updatedSchedule.isActive
         });
-        
+
         // 등원/하원 시간 순서 검증
         if (updatedSchedule.arrivalTime >= updatedSchedule.departureTime) {
           console.error(`${day} 시간 순서 오류:`, {
@@ -598,15 +550,14 @@ export const updateEditState = functions.https.onRequest(async (req: functions.h
             departureTime: updatedSchedule.departureTime,
             shareToken: shareToken.substring(0, 8) + "..."
           });
-          res.status(400).json({ error: `${day}의 하원 시간은 등원 시간보다 늦어야 합니다.` });
-          return;
+          throw new HttpsError("invalid-argument", `${day}의 하원 시간은 등원 시간보다 늦어야 합니다.`);
         }
-        
+
         // 16시간 제한 검증 (실제 DB 제한 반영)
         const startMinutes = timeToMinutes(updatedSchedule.arrivalTime);
         const endMinutes = timeToMinutes(updatedSchedule.departureTime);
         const durationMinutes = endMinutes - startMinutes;
-        
+
         if (durationMinutes > 16 * 60) {
           console.error(`${day} 시간 초과 오류:`, {
             arrivalTime: updatedSchedule.arrivalTime,
@@ -615,31 +566,29 @@ export const updateEditState = functions.https.onRequest(async (req: functions.h
             maxMinutes: 16 * 60,
             shareToken: shareToken.substring(0, 8) + "..."
           });
-          res.status(400).json({ error: `${day}은 하루 16시간을 초과할 수 없습니다.` });
-          return;
+          throw new HttpsError("invalid-argument", `${day}은 하루 16시간을 초과할 수 없습니다.`);
         }
       }
-      
+
       // 시간 간격 검증 (실제 DB 제한 반영)
       if (timeSlotIntervalChanged) {
         const newInterval = basicScheduleChanges.updatedTimeSlotInterval;
-        
+
         console.log("시간 간격 검증:", {
           newInterval: newInterval,
           minInterval: 15,
           shareToken: shareToken.substring(0, 8) + "..."
         });
-        
+
         if (newInterval < 15) {
           console.error("시간 간격 최소값 위반:", {
             newInterval: newInterval,
             minInterval: 15,
             shareToken: shareToken.substring(0, 8) + "..."
           });
-          res.status(400).json({ error: "시간 간격은 최소 15분 이상이어야 합니다." });
-          return;
+          throw new HttpsError("invalid-argument", "시간 간격은 최소 15분 이상이어야 합니다.");
         }
-        
+
         // 허용된 간격 옵션 검증
         if (permissions.timeSlotIntervalOptions && !permissions.timeSlotIntervalOptions.includes(newInterval)) {
           console.error("허용되지 않은 시간 간격:", {
@@ -647,10 +596,7 @@ export const updateEditState = functions.https.onRequest(async (req: functions.h
             allowedOptions: permissions.timeSlotIntervalOptions,
             shareToken: shareToken.substring(0, 8) + "..."
           });
-          res.status(400).json({ 
-            error: `허용되지 않은 시간 간격입니다. 허용된 간격: ${permissions.timeSlotIntervalOptions.join(", ")}분` 
-          });
-          return;
+          throw new HttpsError("invalid-argument", `허용되지 않은 시간 간격입니다. 허용된 간격: ${permissions.timeSlotIntervalOptions.join(", ")}분`);
         }
       }
       
@@ -690,49 +636,32 @@ export const updateEditState = functions.https.onRequest(async (req: functions.h
 
     await editStateDoc.ref.update(updateData);
 
-    res.status(200).json({
+    return {
       success: true,
       message: "편집 상태가 저장되었습니다."
-    });
+    };
   } catch (error) {
     console.error("편집 상태 업데이트 오류:", error);
-    res.status(500).json({ error: "서버 오류가 발생했습니다." });
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "서버 오류가 발생했습니다.");
   }
 });
 
 /**
  * 편집 상태 조회
  */
-export const getEditState = functions.https.onRequest(async (req, res) => {
+export const getEditState = onCall({
+  cors: true
+}, async (request) => {
   console.log("=== getEditState 호출됨 ===");
-  console.log("Request Headers:", req.headers);
-  console.log("Request Query:", req.query);
-  console.log("Request Method:", req.method);
-  console.log("Request Origin:", req.get("Origin"));
-
-  // CORS 설정
-  res.set("Access-Control-Allow-Origin", "*");
-  res.set("Access-Control-Allow-Methods", "GET, OPTIONS");
-  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-
-  if (req.method === "OPTIONS") {
-    console.log("OPTIONS 요청 처리");
-    res.status(204).send("");
-    return;
-  }
-
-  if (req.method !== "GET") {
-    console.log("잘못된 메서드:", req.method);
-    res.status(405).json({ error: { message: "Method not allowed", status: "INVALID_ARGUMENT" } });
-    return;
-  }
 
   try {
-    const shareToken = req.query.token as string;
+    const { shareToken } = request.data as { shareToken: string };
 
     if (!shareToken) {
-      res.status(400).json({ error: { message: "공유 토큰이 필요합니다.", status: "INVALID_ARGUMENT" } });
-      return;
+      throw new HttpsError("invalid-argument", "공유 토큰이 필요합니다.");
     }
 
     // 편집 상태 조회
@@ -745,8 +674,7 @@ export const getEditState = functions.https.onRequest(async (req, res) => {
       .get();
 
     if (editStateQuery.empty) {
-      res.status(404).json({ error: { message: "편집 상태를 찾을 수 없습니다.", status: "NOT_FOUND" } });
-      return;
+      throw new HttpsError("not-found", "편집 상태를 찾을 수 없습니다.");
     }
 
     const editStateDoc = editStateQuery.docs[0];
@@ -760,8 +688,7 @@ export const getEditState = functions.https.onRequest(async (req, res) => {
         expiredAt: admin.firestore.Timestamp.now()
       });
 
-      res.status(410).json({ error: { message: "편집 세션이 만료되었습니다.", status: "FAILED_PRECONDITION" } });
-      return;
+      throw new HttpsError("failed-precondition", "편집 세션이 만료되었습니다.");
     }
 
     // 마지막 접근 시간 업데이트
@@ -769,7 +696,7 @@ export const getEditState = functions.https.onRequest(async (req, res) => {
       lastAccessedAt: admin.firestore.Timestamp.now()
     });
 
-    const result = {
+    return {
       success: true,
       data: {
         editStateId: editStateDoc.id,
@@ -781,47 +708,28 @@ export const getEditState = functions.https.onRequest(async (req, res) => {
         expiresAt: editStateData.expiresAt?.toDate().toISOString() || null
       }
     };
-
-    res.status(200).json(result);
   } catch (error) {
     console.error("편집 상태 조회 오류:", error);
-    res.status(500).json({ error: { message: "서버 오류가 발생했습니다.", status: "INTERNAL" } });
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "서버 오류가 발생했습니다.");
   }
 });
 
 /**
  * 공유된 시간표 데이터 조회 (편집 상태 포함)
  */
-export const getSharedTimetableData = functions.https.onRequest(async (req, res) => {
+export const getSharedTimetableData = onCall({
+  cors: true
+}, async (request) => {
   console.log("=== getSharedTimetableData 호출됨 ===");
-  console.log("Request Headers:", req.headers);
-  console.log("Request Query:", req.query);
-  console.log("Request Method:", req.method);
-  console.log("Request Origin:", req.get("Origin"));
-
-  // CORS 설정
-  res.set("Access-Control-Allow-Origin", "*");
-  res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-
-  if (req.method === "OPTIONS") {
-    console.log("OPTIONS 요청 처리");
-    res.status(204).send("");
-    return;
-  }
-
-  if (req.method !== "GET") {
-    console.log("잘못된 메서드:", req.method);
-    res.status(405).json({ error: { message: "Method not allowed", status: "INVALID_ARGUMENT" } });
-    return;
-  }
 
   try {
-    const shareToken = req.query.token as string;
+    const { shareToken } = request.data as { shareToken: string };
 
     if (!shareToken) {
-      res.status(400).json({ error: { message: "공유 토큰이 필요합니다.", status: "INVALID_ARGUMENT" } });
-      return;
+      throw new HttpsError("invalid-argument", "공유 토큰이 필요합니다.");
     }
 
     // 공유 스케줄 조회 (linkType 조건 제거)
@@ -833,8 +741,7 @@ export const getSharedTimetableData = functions.https.onRequest(async (req, res)
       .get();
 
     if (sharedScheduleQuery.empty) {
-      res.status(404).json({ error: { message: "유효하지 않은 링크입니다.", status: "NOT_FOUND" } });
-      return;
+      throw new HttpsError("not-found", "유효하지 않은 링크입니다.");
     }
 
     const sharedScheduleDoc = sharedScheduleQuery.docs[0];
@@ -845,16 +752,14 @@ export const getSharedTimetableData = functions.https.onRequest(async (req, res)
     // 데이터 구조 검증 (안전한 접근)
     if (!sharedScheduleData || typeof sharedScheduleData !== "object") {
       console.error("유효하지 않은 데이터 구조:", sharedScheduleData);
-      res.status(500).json({ error: { message: "유효하지 않은 데이터 구조입니다.", status: "INTERNAL" } });
-      return;
+      throw new HttpsError("internal", "유효하지 않은 데이터 구조입니다.");
     }
 
     // linkSettings 안전하게 접근
     const linkSettings = sharedScheduleData.linkSettings;
     if (!linkSettings || typeof linkSettings !== "object") {
       console.error("linkSettings가 없습니다:", sharedScheduleData);
-      res.status(500).json({ error: { message: "링크 설정을 찾을 수 없습니다.", status: "INTERNAL" } });
-      return;
+      throw new HttpsError("internal", "링크 설정을 찾을 수 없습니다.");
     }
 
     // 만료 확인 (안전한 접근)
@@ -862,10 +767,12 @@ export const getSharedTimetableData = functions.https.onRequest(async (req, res)
       try {
         const expiresAt = linkSettings.expiresAt.toDate ? linkSettings.expiresAt.toDate() : new Date(linkSettings.expiresAt);
         if (expiresAt < new Date()) {
-          res.status(410).json({ error: { message: "링크가 만료되었습니다.", status: "FAILED_PRECONDITION" } });
-          return;
+          throw new HttpsError("failed-precondition", "링크가 만료되었습니다.");
         }
       } catch (error) {
+        if (error instanceof HttpsError) {
+          throw error;
+        }
         console.error("만료일 처리 오류:", error);
         // 만료일 처리 실패 시 계속 진행
       }
@@ -873,22 +780,19 @@ export const getSharedTimetableData = functions.https.onRequest(async (req, res)
 
     // 활성화 상태 확인 (안전한 접근)
     if (linkSettings.isActive === false) {
-      res.status(403).json({ error: { message: "비활성화된 링크입니다.", status: "FAILED_PRECONDITION" } });
-      return;
+      throw new HttpsError("failed-precondition", "비활성화된 링크입니다.");
     }
 
     const userId = sharedScheduleDoc.ref.parent.parent?.id;
     if (!userId) {
-      res.status(500).json({ error: { message: "사용자 정보를 찾을 수 없습니다.", status: "INTERNAL" } });
-      return;
+      throw new HttpsError("internal", "사용자 정보를 찾을 수 없습니다.");
     }
 
     // timetableId 안전하게 접근
     const timetableId = sharedScheduleData.timetableId;
     if (!timetableId) {
       console.error("timetableId가 없습니다:", sharedScheduleData);
-      res.status(500).json({ error: { message: "시간표 ID를 찾을 수 없습니다.", status: "INTERNAL" } });
-      return;
+      throw new HttpsError("internal", "시간표 ID를 찾을 수 없습니다.");
     }
 
     // 시간표 데이터 조회
@@ -899,8 +803,7 @@ export const getSharedTimetableData = functions.https.onRequest(async (req, res)
     const timetableDoc = await timetableRef.get();
 
     if (!timetableDoc.exists) {
-      res.status(404).json({ error: { message: "시간표 정보를 찾을 수 없습니다.", status: "NOT_FOUND" } });
-      return;
+      throw new HttpsError("not-found", "시간표 정보를 찾을 수 없습니다.");
     }
 
     const timetableData = { id: timetableDoc.id, ...timetableDoc.data() } as any;
@@ -939,16 +842,13 @@ export const getSharedTimetableData = functions.https.onRequest(async (req, res)
     };
 
     console.log("공유 시간표 데이터 조회 성공:", result);
-    res.status(200).json(result);
+    return result;
   } catch (error) {
     console.error("공유 시간표 데이터 조회 오류:", error);
-
-    if (error instanceof functions.https.HttpsError) {
-      res.status(400).json({ error: { message: error.message, status: error.code } });
-      return;
+    if (error instanceof HttpsError) {
+      throw error;
     }
-
-    res.status(500).json({ error: { message: "서버 오류가 발생했습니다.", status: "INTERNAL" } });
+    throw new HttpsError("internal", "서버 오류가 발생했습니다.");
   }
 });
 
@@ -2316,41 +2216,23 @@ export const getStudentEditLinks = functions.https.onRequest(async (req, res) =>
 /**
  * 편집 링크 비활성화
  */
-export const deactivateEditLink = functions.https.onRequest(async (req, res) => {
+export const deactivateEditLink = onCall({
+  cors: true
+}, async (request) => {
   console.log("=== deactivateEditLink 호출됨 ===");
 
-  // CORS 설정
-  res.set("Access-Control-Allow-Origin", "*");
-  res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-
-  if (req.method === "OPTIONS") {
-    res.status(204).send("");
-    return;
-  }
-
-  if (req.method !== "POST") {
-    res.status(405).json({ error: { message: "Method not allowed", status: "INVALID_ARGUMENT" } });
-    return;
-  }
-
   try {
-    // Authorization 헤더에서 토큰 추출
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      res.status(401).json({ error: { message: "인증이 필요합니다.", status: "UNAUTHENTICATED" } });
-      return;
+    const { auth, data } = request;
+
+    if (!auth) {
+      throw new HttpsError("unauthenticated", "인증이 필요합니다.");
     }
 
-    const idToken = authHeader.split("Bearer ")[1];
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    const userId = decodedToken.uid;
-
-    const { shareToken } = req.body;
+    const userId = auth.uid;
+    const { shareToken } = data as { shareToken: string };
 
     if (!shareToken) {
-      res.status(400).json({ error: { message: "공유 토큰이 필요합니다.", status: "INVALID_ARGUMENT" } });
-      return;
+      throw new HttpsError("invalid-argument", "공유 토큰이 필요합니다.");
     }
 
     const db = admin.firestore();
@@ -2365,16 +2247,14 @@ export const deactivateEditLink = functions.https.onRequest(async (req, res) => 
       .get();
 
     if (linkQuery.empty) {
-      res.status(404).json({ error: { message: "링크를 찾을 수 없습니다.", status: "NOT_FOUND" } });
-      return;
+      throw new HttpsError("not-found", "링크를 찾을 수 없습니다.");
     }
 
     const linkDoc = linkQuery.docs[0];
     const linkData = linkDoc.data();
 
     if (!linkData.linkSettings.isActive) {
-      res.status(400).json({ error: { message: "이미 비활성화된 링크입니다.", status: "INVALID_ARGUMENT" } });
-      return;
+      throw new HttpsError("failed-precondition", "이미 비활성화된 링크입니다.");
     }
 
     // 링크 비활성화
@@ -2410,62 +2290,42 @@ export const deactivateEditLink = functions.https.onRequest(async (req, res) => 
       timestamp: admin.firestore.Timestamp.now(),
       details: "링크가 비활성화되었습니다.",
       userId,
-      userName: decodedToken.name || decodedToken.email
+      userName: auth.token.name || auth.token.email
     });
 
-    res.json({
+    return {
       success: true,
       message: "링크가 비활성화되었습니다."
-    });
+    };
   } catch (error) {
     console.error("링크 비활성화 오류:", error);
-    res.status(500).json({ 
-      error: { 
-        message: "서버 오류가 발생했습니다.", 
-        status: "INTERNAL" 
-      } 
-    });
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "서버 오류가 발생했습니다.");
   }
 });
 
 /**
  * 편집 링크 재활성화
  */
-export const activateEditLink = functions.https.onRequest(async (req, res) => {
+export const activateEditLink = onCall({
+  cors: true
+}, async (request) => {
   console.log("=== activateEditLink 호출됨 ===");
 
-  // CORS 설정
-  res.set("Access-Control-Allow-Origin", "*");
-  res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-
-  if (req.method === "OPTIONS") {
-    res.status(204).send("");
-    return;
-  }
-
-  if (req.method !== "POST") {
-    res.status(405).json({ error: { message: "Method not allowed", status: "INVALID_ARGUMENT" } });
-    return;
-  }
-
   try {
-    // Authorization 헤더에서 토큰 추출
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      res.status(401).json({ error: { message: "인증이 필요합니다.", status: "UNAUTHENTICATED" } });
-      return;
+    const { auth, data } = request;
+
+    if (!auth) {
+      throw new HttpsError("unauthenticated", "인증이 필요합니다.");
     }
 
-    const idToken = authHeader.split("Bearer ")[1];
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    const userId = decodedToken.uid;
-
-    const { shareToken } = req.body;
+    const userId = auth.uid;
+    const { shareToken } = data as { shareToken: string };
 
     if (!shareToken) {
-      res.status(400).json({ error: { message: "공유 토큰이 필요합니다.", status: "INVALID_ARGUMENT" } });
-      return;
+      throw new HttpsError("invalid-argument", "공유 토큰이 필요합니다.");
     }
 
     const db = admin.firestore();
@@ -2480,22 +2340,19 @@ export const activateEditLink = functions.https.onRequest(async (req, res) => {
       .get();
 
     if (linkQuery.empty) {
-      res.status(404).json({ error: { message: "링크를 찾을 수 없습니다.", status: "NOT_FOUND" } });
-      return;
+      throw new HttpsError("not-found", "링크를 찾을 수 없습니다.");
     }
 
     const linkDoc = linkQuery.docs[0];
     const linkData = linkDoc.data();
 
     if (linkData.linkSettings.isActive) {
-      res.status(400).json({ error: { message: "이미 활성화된 링크입니다.", status: "INVALID_ARGUMENT" } });
-      return;
+      throw new HttpsError("failed-precondition", "이미 활성화된 링크입니다.");
     }
 
     // 만료 확인
     if (linkData.linkSettings.expiresAt && linkData.linkSettings.expiresAt.toDate() < new Date()) {
-      res.status(400).json({ error: { message: "만료된 링크는 재활성화할 수 없습니다.", status: "INVALID_ARGUMENT" } });
-      return;
+      throw new HttpsError("failed-precondition", "만료된 링크는 재활성화할 수 없습니다.");
     }
 
     // 링크 재활성화
@@ -2512,62 +2369,42 @@ export const activateEditLink = functions.https.onRequest(async (req, res) => {
       timestamp: admin.firestore.Timestamp.now(),
       details: "링크가 재활성화되었습니다.",
       userId,
-      userName: decodedToken.name || decodedToken.email
+      userName: auth.token.name || auth.token.email
     });
 
-    res.json({
+    return {
       success: true,
       message: "링크가 재활성화되었습니다."
-    });
+    };
   } catch (error) {
     console.error("링크 재활성화 오류:", error);
-    res.status(500).json({ 
-      error: { 
-        message: "서버 오류가 발생했습니다.", 
-        status: "INTERNAL" 
-      } 
-    });
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "서버 오류가 발생했습니다.");
   }
 });
 
 /**
  * 편집 링크 삭제
  */
-export const deleteEditLink = functions.https.onRequest(async (req, res) => {
+export const deleteEditLink = onCall({
+  cors: true
+}, async (request) => {
   console.log("=== deleteEditLink 호출됨 ===");
 
-  // CORS 설정
-  res.set("Access-Control-Allow-Origin", "*");
-  res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-
-  if (req.method === "OPTIONS") {
-    res.status(204).send("");
-    return;
-  }
-
-  if (req.method !== "POST") {
-    res.status(405).json({ error: { message: "Method not allowed", status: "INVALID_ARGUMENT" } });
-    return;
-  }
-
   try {
-    // Authorization 헤더에서 토큰 추출
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      res.status(401).json({ error: { message: "인증이 필요합니다.", status: "UNAUTHENTICATED" } });
-      return;
+    const { auth, data } = request;
+
+    if (!auth) {
+      throw new HttpsError("unauthenticated", "인증이 필요합니다.");
     }
 
-    const idToken = authHeader.split("Bearer ")[1];
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    const userId = decodedToken.uid;
-
-    const { shareToken } = req.body;
+    const userId = auth.uid;
+    const { shareToken } = data as { shareToken: string };
 
     if (!shareToken) {
-      res.status(400).json({ error: { message: "공유 토큰이 필요합니다.", status: "INVALID_ARGUMENT" } });
-      return;
+      throw new HttpsError("invalid-argument", "공유 토큰이 필요합니다.");
     }
 
     const db = admin.firestore();
@@ -2582,8 +2419,7 @@ export const deleteEditLink = functions.https.onRequest(async (req, res) => {
       .get();
 
     if (linkQuery.empty) {
-      res.status(404).json({ error: { message: "링크를 찾을 수 없습니다.", status: "NOT_FOUND" } });
-      return;
+      throw new HttpsError("not-found", "링크를 찾을 수 없습니다.");
     }
 
     const linkDoc = linkQuery.docs[0];
@@ -2627,21 +2463,19 @@ export const deleteEditLink = functions.https.onRequest(async (req, res) => {
       timestamp: admin.firestore.Timestamp.now(),
       details: "링크가 삭제되었습니다.",
       userId,
-      userName: decodedToken.name || decodedToken.email
+      userName: auth.token.name || auth.token.email
     });
 
-    res.json({
+    return {
       success: true,
       message: "링크가 삭제되었습니다."
-    });
+    };
   } catch (error) {
     console.error("링크 삭제 오류:", error);
-    res.status(500).json({ 
-      error: { 
-        message: "서버 오류가 발생했습니다.", 
-        status: "INTERNAL" 
-      } 
-    });
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "서버 오류가 발생했습니다.");
   }
 });
 

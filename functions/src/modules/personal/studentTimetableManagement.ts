@@ -11,8 +11,16 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { logger } from "firebase-functions";
+import { parseTimeToMinutes, minutesToTime } from "../../utils/timeUtils";
 
 const db = getFirestore();
+
+// CORS 설정: 현재 프로젝트의 도메인 허용
+const projectId = process.env.GCLOUD_PROJECT || (process.env.FIREBASE_CONFIG ? JSON.parse(process.env.FIREBASE_CONFIG).projectId : "");
+const corsConfig = projectId ? [
+  `https://${projectId}.web.app`,
+  `https://${projectId}.firebaseapp.com`
+] : true;
 
 // 타입 정의
 export type DayOfWeek = "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
@@ -128,27 +136,17 @@ function validateBasicSchedule(basicSchedule: BasicSchedule): void {
 
 /**
  * 유틸리티 함수들
+ *
+ * Note: parseTime, minutesToTime 함수는 utils/timeUtils.ts에서 import하여 사용
+ * (함수 중복 제거)
  */
-function parseTime(timeString: string): number {
-  const [hours, minutes] = timeString.split(":").map(Number);
-  return hours * 60 + minutes;
-}
-
-/**
- * 분을 시간 문자열로 변환
- */
-function minutesToTime(minutes: number): string {
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  return `${hours.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}`;
-}
 
 
 /**
  * 학생별 시간표 생성
  */
 export const createStudentTimetable = onCall({
-  cors: true
+  cors: corsConfig
 }, async (request) => {
   try {
     const { auth, data } = request;
@@ -233,7 +231,7 @@ export const createStudentTimetable = onCall({
  * 학생별 시간표 목록 조회
  */
 export const getStudentTimetables = onCall({
-  cors: true
+  cors: corsConfig
 }, async (request) => {
   try {
     const { auth, data } = request;
@@ -284,7 +282,7 @@ export const getStudentTimetables = onCall({
  * 학생별 시간표 업데이트
  */
 export const updateStudentTimetable = onCall({
-  cors: true
+  cors: corsConfig
 }, async (request) => {
   try {
     const { auth, data } = request;
@@ -359,7 +357,7 @@ export const updateStudentTimetable = onCall({
  * - schedule_contributions (해당 시간표의 기여 내역)
  */
 export const deleteStudentTimetable = onCall({
-  cors: true
+  cors: corsConfig
 }, async (request) => {
   try {
     const { auth, data } = request;
@@ -470,7 +468,7 @@ export const deleteStudentTimetable = onCall({
  * 활성 시간표 설정
  */
 export const setActiveStudentTimetable = onCall({
-  cors: true
+  cors: corsConfig
 }, async (request) => {
   try {
     const { auth, data } = request;
@@ -543,7 +541,7 @@ export const setActiveStudentTimetable = onCall({
  * 자동 자습시간 채우기 (기본 구현)
  */
 export const autoFillStudentTimetable = onCall({
-  cors: true
+  cors: corsConfig
 }, async (request) => {
   try {
     const { auth, data } = request;
@@ -593,8 +591,8 @@ export const autoFillStudentTimetable = onCall({
 
       // 해당 요일의 등원 시간부터 하원 시간까지 자습 시간 생성
       const daySchedule = basicSchedule.dailySchedules[day as DayOfWeek];
-      const startMinutes = parseTime(daySchedule.arrivalTime);
-      const endMinutes = parseTime(daySchedule.departureTime);
+      const startMinutes = parseTimeToMinutes(daySchedule.arrivalTime);
+      const endMinutes = parseTimeToMinutes(daySchedule.departureTime);
       const interval = basicSchedule.timeSlotInterval;
 
       // 기존 일정이 없는 시간대에만 자습 추가
@@ -658,7 +656,7 @@ export const autoFillStudentTimetable = onCall({
  * 시간 슬롯 업데이트
  */
 export const updateTimeSlot = onCall({
-  cors: true
+  cors: corsConfig
 }, async (request) => {
   try {
     const { auth, data } = request;
@@ -745,7 +743,7 @@ export const updateTimeSlot = onCall({
  * 시간 슬롯 삭제
  */
 export const deleteTimeSlot = onCall({
-  cors: true
+  cors: corsConfig
 }, async (request) => {
   try {
     const { auth, data } = request;
@@ -825,7 +823,7 @@ export const deleteTimeSlot = onCall({
  * 시간표 복제
  */
 export const duplicateStudentTimetable = onCall({
-  cors: true
+  cors: corsConfig
 }, async (request) => {
   try {
     const { auth, data } = request;
@@ -901,7 +899,7 @@ export const duplicateStudentTimetable = onCall({
  * 기본 스케줄 업데이트
  */
 export const updateBasicSchedule = onCall({
-  cors: true
+  cors: corsConfig
 }, async (request) => {
   try {
     const { auth, data } = request;

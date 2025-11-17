@@ -9,6 +9,7 @@ import Login from '../pages/Login/Login';
 import Student from '../pages/Student/Student';
 import TimeTable from '../pages/TimeTable/TimeTable';
 import Attendance from '../pages/Attendance/Attendance';
+import AttendanceRecords from '../pages/AttendanceRecords/AttendanceRecords';
 import AttendanceCheckIn from '../pages/AttendanceCheckIn/AttendanceCheckIn';
 import StudentTimetableSharedEdit from '../pages/StudentTimetableSharedEdit/StudentTimetableSharedEdit';
 import SubmissionComplete from '../pages/SubmissionComplete/SubmissionComplete';
@@ -74,6 +75,17 @@ export const AppRoutes: React.FC = () => {
           <ProtectedRoute>
             <MainLayout>
               <Attendance />
+            </MainLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path={ROUTES.ATTENDANCE_RECORDS}
+        element={
+          <ProtectedRoute>
+            <MainLayout>
+              <AttendanceRecords />
             </MainLayout>
           </ProtectedRoute>
         }

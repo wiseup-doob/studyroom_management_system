@@ -31,6 +31,12 @@ const SIDEBAR_MENU_ITEMS = [
     label: '출석 관리',
     path: '/attendance',
     icon: '📋'
+  },
+  {
+    id: 'attendance-records',
+    label: '출결 기록',
+    path: '/attendance-records',
+    icon: '📊'
   }
 ];
 
