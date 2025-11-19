@@ -113,6 +113,19 @@ export interface StudentAttendanceRecord {
   checkInMethod?: 'pin' | 'manual' | 'admin';
   checkOutMethod?: 'pin' | 'manual' | 'admin';
   notes?: string;
+
+  // ===== 블럭 시스템 필드 (optional - 하위 호환성 유지) =====
+  blockNumber?: number; // 블럭 번호 (1, 2, 3...)
+  blockSlotCount?: number; // 블럭 내 슬롯 개수
+  blockSubjects?: string; // 블럭 내 과목 목록 ("수학, 자습, 영어")
+  blockSlots?: Array<{
+    slotId: string;
+    subject: string;
+    type: 'class' | 'self_study';
+    startTime: string;
+    endTime: string;
+  }>;
+
   sessionNumber: number; // 당일 몇 번째 세션인지 (1, 2, 3...)
   isLatestSession: boolean; // 가장 최신 세션 여부
   createdAt: Date;
@@ -164,6 +177,35 @@ export interface AttendanceStudentPin {
     changedAt: Date;
     changedBy: string;
   }[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// ==================== ClassAbsenceEvent (백엔드와 동일) ====================
+
+export interface ClassAbsenceEvent {
+  id: string;
+  userId: string;
+  studentId: string;
+  studentName: string;
+  date: string; // YYYY-MM-DD
+
+  // 블럭 레코드 참조
+  attendanceRecordId: string;
+  blockNumber: number;
+
+  // 결석 처리된 슬롯
+  slotId: string;
+  subject: string;
+  slotStartTime: string;
+  slotEndTime: string;
+
+  // 처리 정보
+  markedBy: string; // 선생님 userId
+  markedByName: string;
+  markedAt: Date;
+  notes?: string;
+
   createdAt: Date;
   updatedAt: Date;
 }

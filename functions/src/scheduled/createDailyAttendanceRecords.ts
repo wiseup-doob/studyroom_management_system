@@ -18,6 +18,7 @@ import {
   getTodayInKorea,
   getCurrentKoreaDayOfWeek
 } from "../utils/timeUtils";
+import { groupSlotsByExternalBreak } from "../utils/attendanceUtils";
 
 export const createDailyAttendanceRecords = onSchedule({
   schedule: "0 2 * * *", // 매일 02:00 (Asia/Seoul 기준)
@@ -98,28 +99,30 @@ export const createDailyAttendanceRecords = onSchedule({
             continue;
           }
 
-          // type이 "class" 또는 "self_study"인 슬롯만 선택
-          // "external"은 출석 체크 대상 아님
-          const obligatorySlots = detailedSchedule.timeSlots.filter(
-            (slot: any) => slot.type === "class" || slot.type === "self_study"
+          // 4-1. 시간 순서대로 정렬 (detailedSchedule.timeSlots는 정렬 안 되어 있을 수 있음)
+          const sortedSlots = [...detailedSchedule.timeSlots].sort((a, b) =>
+            a.startTime.localeCompare(b.startTime)
           );
 
-          if (obligatorySlots.length === 0) {
+          // 4-2. 연속 블럭 그룹화
+          const continuousBlocks = groupSlotsByExternalBreak(sortedSlots);
+
+          if (continuousBlocks.length === 0) {
             logger.info(`[SKIP] userId=${userId}, studentId=${studentId}: 출석 의무 슬롯 없음`);
             totalSkipped++;
             continue;
           }
 
-          // 5. 각 슬롯별로 출석 레코드 생성
+          // 5. 블럭마다 레코드 생성
           const batch = db.batch();
 
-          for (let i = 0; i < obligatorySlots.length; i++) {
-            const slot = obligatorySlots[i];
+          for (let i = 0; i < continuousBlocks.length; i++) {
+            const block = continuousBlocks[i];
             const timestamp = admin.firestore.Timestamp.now();
 
-            // recordId: {studentId}_{YYYYMMDD}_slot{N}_{timestamp}
-            // 예: "student123_20250131_slot1_1706745600000"
-            const recordId = `${studentId}_${today.replace(/-/g, "")}_slot${i + 1}_${timestamp.toMillis()}`;
+            // ⭐ recordId: {studentId}_{YYYYMMDD}_block{N}_{timestamp}
+            // 변경: slot → block
+            const recordId = `${studentId}_${today.replace(/-/g, "")}_block${i + 1}_${timestamp.toMillis()}`;
 
             const recordRef = db
               .collection("users")
@@ -138,21 +141,33 @@ export const createDailyAttendanceRecords = onSchedule({
               date: today,
               dayOfWeek,
 
-              // ✅ 신규 필드: 시간표 슬롯 정보
+              // ⭐ 블럭 정보 (신규)
+              blockNumber: i + 1,
+              blockSlotCount: block.slots.length,
+              blockSubjects: block.slots.map((s: any) => s.subject).join(", "),
+              blockSlots: block.slots.map((s: any, idx: number) => ({
+                slotId: s.id || `slot_${idx}`,
+                subject: s.subject || "",
+                type: s.type,
+                startTime: s.startTime,
+                endTime: s.endTime
+              })),
+
+              // 시간표 정보 (첫 번째 슬롯 기준)
               timetableId,
-              timeSlotId: slot.id || `slot_${i}`,
-              timeSlotSubject: slot.subject || "",
-              timeSlotType: slot.type,
+              timeSlotId: block.slots[0].id || "slot_0",
+              timeSlotSubject: block.slots.map((s: any) => s.subject).join(", "),
+              timeSlotType: block.slots[0].type,
 
-              expectedArrivalTime: slot.startTime,
-              expectedDepartureTime: slot.endTime,
+              expectedArrivalTime: block.startTime, // 블럭 시작
+              expectedDepartureTime: block.endTime, // 블럭 종료
 
-              status: "scheduled", // ← 초기 상태
+              status: "scheduled",
               isLate: false,
               isEarlyLeave: false,
 
-              sessionNumber: i + 1, // 슬롯 순서 (1부터 시작)
-              isLatestSession: (i === obligatorySlots.length - 1),
+              sessionNumber: i + 1, // 블럭 번호와 동일
+              isLatestSession: (i === continuousBlocks.length - 1),
 
               createdAt: timestamp,
               updatedAt: timestamp,
@@ -163,8 +178,9 @@ export const createDailyAttendanceRecords = onSchedule({
           }
 
           await batch.commit();
-          totalCreated += obligatorySlots.length;
-          logger.info(`[성공] userId=${userId}, studentId=${studentId}: ${obligatorySlots.length}개 슬롯 생성`);
+          totalCreated += continuousBlocks.length; // 블럭 개수
+          const totalSlots = sortedSlots.filter((s: any) => s.type === "class" || s.type === "self_study").length;
+          logger.info(`[성공] userId=${userId}, studentId=${studentId}: ${continuousBlocks.length}개 블럭 생성 (${totalSlots}개 슬롯)`);
         }
       } catch (userError) {
         logger.error(`[사용자 처리 오류] userId=${userId}`, userError);

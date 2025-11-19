@@ -1,5 +1,12 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
+import {
+  getTodayInKorea,
+  getCurrentKoreaDayOfWeek,
+  getCurrentKoreaMinutes,
+  parseTimeToMinutes
+} from "../../utils/timeUtils";
+import { groupSlotsByExternalBreak } from "../../utils/attendanceUtils";
 
 // ==================== 타입 정의 ====================
 
@@ -68,6 +75,154 @@ interface SeatLayout {
   };
   createdAt: admin.firestore.Timestamp;
   updatedAt: admin.firestore.Timestamp;
+}
+
+// ==================== 헬퍼 함수 ====================
+
+/**
+ * 당일 신규 등록 학생의 출석 기록 즉시 생성
+ *
+ * assignSeat 완료 후 호출하여 오늘 남은 수업의 출석 레코드를 생성합니다.
+ * 새벽 2시 배치 작업 이후에 등록된 학생도 즉시 출석 체크 가능하도록 보장합니다.
+ *
+ * @param db Firestore instance
+ * @param userId 사용자 ID
+ * @param studentId 학생 ID
+ * @param studentName 학생 이름
+ * @param seatLayoutId 좌석 배치도 ID
+ * @param seatId 좌석 ID
+ * @param seatNumber 좌석 번호
+ * @param timetableId 시간표 ID
+ * @param timetableData 시간표 데이터
+ */
+async function createTodayAttendanceRecordsForStudent(
+  db: admin.firestore.Firestore,
+  userId: string,
+  studentId: string,
+  studentName: string,
+  seatLayoutId: string,
+  seatId: string,
+  seatNumber: string,
+  timetableId: string,
+  timetableData: any
+): Promise<void> {
+  const today = getTodayInKorea();
+  const dayOfWeek = getCurrentKoreaDayOfWeek();
+  const currentMinutes = getCurrentKoreaMinutes();
+
+  // 1. 오늘 일정 확인
+  const dailySchedule = timetableData?.basicSchedule?.dailySchedules?.[dayOfWeek];
+  if (!dailySchedule || !dailySchedule.isActive) {
+    // 오늘은 비활성 날짜 - 레코드 생성 불필요
+    return;
+  }
+
+  // 2. 상세 일정에서 출석 의무 슬롯 추출
+  const detailedSchedule = timetableData?.detailedSchedule?.[dayOfWeek];
+  if (!detailedSchedule || !detailedSchedule.timeSlots) {
+    // 상세 일정 없음 - 레코드 생성 불필요
+    return;
+  }
+
+  // 3. 현재 시간 이후 슬롯만 필터링
+  const futureSlots = detailedSchedule.timeSlots.filter((slot: any) => {
+    if (slot.type !== "class" && slot.type !== "self_study") return false;
+    const slotStartMinutes = parseTimeToMinutes(slot.startTime);
+    return slotStartMinutes >= currentMinutes - 30;
+  });
+
+  if (futureSlots.length === 0) {
+    return; // 오늘 남은 수업 없음
+  }
+
+  // 4. 시간 순서대로 정렬
+  const sortedSlots = [...futureSlots].sort((a, b) =>
+    a.startTime.localeCompare(b.startTime)
+  );
+
+  // 5. 블럭 그룹화
+  const continuousBlocks = groupSlotsByExternalBreak(sortedSlots);
+
+  if (continuousBlocks.length === 0) {
+    return;
+  }
+
+  // 6. 블럭마다 레코드 생성
+  const batch = db.batch();
+  const timestamp = admin.firestore.Timestamp.now();
+
+  for (let i = 0; i < continuousBlocks.length; i++) {
+    const block = continuousBlocks[i];
+
+    // ⭐ recordId: block 사용
+    const recordId = `${studentId}_${today.replace(/-/g, "")}_block${i + 1}_${timestamp.toMillis()}`;
+
+    const recordRef = db
+      .collection("users")
+      .doc(userId)
+      .collection("student_attendance_records")
+      .doc(recordId);
+
+    const slotStartMinutes = parseTimeToMinutes(block.startTime);
+    const hasStarted = currentMinutes > slotStartMinutes;
+
+    const recordData: any = {
+      id: recordId,
+      userId,
+      studentId,
+      studentName,
+      seatLayoutId,
+      seatId,
+      seatNumber,
+      date: today,
+      dayOfWeek,
+
+      // ⭐ 블럭 정보
+      blockNumber: i + 1,
+      blockSlotCount: block.slots.length,
+      blockSubjects: block.slots.map((s: any) => s.subject).join(", "),
+      blockSlots: block.slots.map((s: any, idx: number) => ({
+        slotId: s.id || `slot_${idx}`,
+        subject: s.subject || "",
+        type: s.type,
+        startTime: s.startTime,
+        endTime: s.endTime
+      })),
+
+      // 시간표 정보
+      timetableId,
+      timeSlotId: block.slots[0].id || "slot_0",
+      timeSlotSubject: block.slots.map((s: any) => s.subject).join(", "),
+      timeSlotType: block.slots[0].type,
+
+      expectedArrivalTime: block.startTime,
+      expectedDepartureTime: block.endTime,
+
+      status: hasStarted ? "not_arrived" : "scheduled",
+      isLate: false,
+      isEarlyLeave: false,
+
+      sessionNumber: i + 1,
+      isLatestSession: (i === continuousBlocks.length - 1),
+
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      recordTimestamp: timestamp
+    };
+
+    if (hasStarted) {
+      recordData.notArrivedAt = timestamp;
+    }
+
+    batch.set(recordRef, recordData);
+  }
+
+  await batch.commit();
+
+  console.log(
+    `[당일 등록 출석 레코드 생성] userId=${userId}, studentId=${studentId}: ` +
+    `${continuousBlocks.length}개 블럭 생성 (오늘 남은 수업)`
+  );
 }
 
 /**
@@ -204,6 +359,7 @@ export const assignSeat = onCall(async (request) => {
     // ⭐ 학생 할당 검증
     let studentName = "";
     let expectedSchedule: any = undefined;
+    let timetableData: any = undefined;
 
     // 학생 정보 조회
     const studentDoc = await db
@@ -244,7 +400,7 @@ export const assignSeat = onCall(async (request) => {
     }
 
     if (timetableDoc && timetableDoc.exists) {
-      const timetableData = timetableDoc.data();
+      timetableData = timetableDoc.data();
       expectedSchedule = timetableData?.basicSchedule?.dailySchedules || {};
     } else {
       throw new HttpsError(
@@ -292,6 +448,27 @@ export const assignSeat = onCall(async (request) => {
     }
 
     await assignmentRef.set(assignmentData);
+
+    // ✅ 당일 신규 등록 학생의 출석 기록 즉시 생성
+    // 새벽 2시 배치 이후 등록된 학생도 즉시 출석 체크 가능하도록 보장
+    try {
+      await createTodayAttendanceRecordsForStudent(
+        db,
+        userId,
+        studentId,
+        studentName,
+        seatLayoutId,
+        seatId,
+        seatNumber,
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        timetableDoc!.id, // timetableDoc는 Line 386-393에서 검증됨
+        timetableData
+      );
+    } catch (recordError) {
+      // 출석 레코드 생성 실패해도 좌석 배정은 성공으로 처리
+      // 새벽 2시 배치 작업이 다시 실행되므로 데이터 무결성 유지
+      console.error("출석 레코드 생성 실패 (좌석 배정은 성공):", recordError);
+    }
 
     return {
       success: true,

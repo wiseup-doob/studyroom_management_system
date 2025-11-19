@@ -142,6 +142,10 @@ export {
   manualCheckIn,
   manualCheckOut,
   markStudentAbsent,
+  // 과목별 결석 처리 시스템
+  markClassAbsence,
+  cancelClassAbsence,
+  getClassAbsenceEvents,
 } from "./modules/personal/studentAttendanceManagement";
 
 // ==================== Firestore Triggers ====================

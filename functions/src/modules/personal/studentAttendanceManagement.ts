@@ -75,6 +75,19 @@ interface StudentAttendanceRecord {
   checkInMethod?: "pin" | "manual" | "admin";
   checkOutMethod?: "pin" | "manual" | "admin";
   notes?: string;
+
+  // ===== 블럭 시스템 필드 (optional - 하위 호환성 유지) =====
+  blockNumber?: number; // 블럭 번호 (1, 2, 3...)
+  blockSlotCount?: number; // 블럭 내 슬롯 개수
+  blockSubjects?: string; // 블럭 내 과목 목록 ("수학, 자습, 영어")
+  blockSlots?: Array<{
+    slotId: string;
+    subject: string;
+    type: "class" | "self_study";
+    startTime: string;
+    endTime: string;
+  }>;
+
   sessionNumber: number; // 당일 몇 번째 세션인지 (1, 2, 3...)
   isLatestSession: boolean; // 가장 최신 세션 여부
   createdAt: admin.firestore.Timestamp;
@@ -115,6 +128,38 @@ interface AttendanceStudentPin {
     changedAt: admin.firestore.Timestamp;
     changedBy: string;
   }[];
+  createdAt: admin.firestore.Timestamp;
+  updatedAt: admin.firestore.Timestamp;
+}
+
+/**
+ * 과목별 결석 이벤트
+ *
+ * 블럭 단위 출석에서 개별 슬롯에 대한 결석 처리를 기록
+ */
+interface ClassAbsenceEvent {
+  id: string;
+  userId: string;
+  studentId: string;
+  studentName: string;
+  date: string; // YYYY-MM-DD
+
+  // 블럭 레코드 참조
+  attendanceRecordId: string;
+  blockNumber: number;
+
+  // 결석 처리된 슬롯
+  slotId: string;
+  subject: string;
+  slotStartTime: string;
+  slotEndTime: string;
+
+  // 처리 정보
+  markedBy: string; // 선생님 userId
+  markedByName: string;
+  markedAt: admin.firestore.Timestamp;
+  notes?: string;
+
   createdAt: admin.firestore.Timestamp;
   updatedAt: admin.firestore.Timestamp;
 }
@@ -839,30 +884,12 @@ export const checkAttendanceByPin = onCall({ cors: corsConfig }, async (request)
       };
     }
 
-    // 6-3. checked_out → checked_in (재입실)
+    // 6-3. checked_out 상태 차단 (재입실 제거)
     if (recordData.status === "checked_out") {
-      const updateData: any = {
-        status: "checked_in",
-        checkInMethod: "pin",
-        updatedAt: timestamp,
-        notes: recordData.notes ?
-          `${recordData.notes}\n재입실: ${timestamp.toDate().toLocaleTimeString("ko-KR")}` :
-          `재입실: ${timestamp.toDate().toLocaleTimeString("ko-KR")}`
-      };
-
-      await recordRef.update(updateData);
-
-      await linkDoc.ref.update({
-        usageCount: admin.firestore.FieldValue.increment(1),
-        updatedAt: timestamp
-      });
-
-      return {
-        success: true,
-        message: `${recordData.timeSlotSubject || studentName} 재입실 완료`,
-        action: "re_checked_in",
-        data: { ...recordData, ...updateData }
-      };
+      throw new HttpsError(
+        "failed-precondition",
+        "이미 하원 처리되었습니다.\n실수로 하원한 경우 선생님에게 문의하여 출석 상태를 변경해주세요."
+      );
     }
 
     throw new HttpsError("failed-precondition", "처리할 수 없는 출석 상태입니다.");
@@ -1696,6 +1723,194 @@ export const markStudentAbsent = onCall({ cors: corsConfig }, async (request) =>
     if (error instanceof HttpsError) {
       throw error;
     }
+    throw new HttpsError("internal", "서버 오류가 발생했습니다.");
+  }
+});
+
+/**
+ * 개별 슬롯 결석 처리
+ */
+export const markClassAbsence = onCall({ cors: corsConfig }, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "인증이 필요합니다.");
+  }
+
+  const userId = request.auth.uid;
+  const { attendanceRecordId, slotId, notes } = request.data;
+
+  if (!attendanceRecordId || !slotId) {
+    throw new HttpsError("invalid-argument", "필수 필드가 누락되었습니다.");
+  }
+
+  try {
+    const db = admin.firestore();
+
+    // 1. 출석 레코드 조회
+    const recordDoc = await db
+      .collection("users")
+      .doc(userId)
+      .collection("student_attendance_records")
+      .doc(attendanceRecordId)
+      .get();
+
+    if (!recordDoc.exists) {
+      throw new HttpsError("not-found", "출석 레코드를 찾을 수 없습니다.");
+    }
+
+    const record = recordDoc.data() as StudentAttendanceRecord;
+
+    // 2. blockSlots에서 해당 슬롯 찾기
+    if (!record.blockSlots) {
+      throw new HttpsError("failed-precondition", "블럭 시스템 레코드가 아닙니다.");
+    }
+
+    const targetSlot = record.blockSlots.find((s) => s.slotId === slotId);
+
+    if (!targetSlot) {
+      throw new HttpsError("not-found", "해당 슬롯을 찾을 수 없습니다.");
+    }
+
+    // 3. 이미 결석 처리되었는지 확인
+    const existingAbsence = await db
+      .collection("users")
+      .doc(userId)
+      .collection("class_absence_events")
+      .where("attendanceRecordId", "==", attendanceRecordId)
+      .where("slotId", "==", slotId)
+      .limit(1)
+      .get();
+
+    if (!existingAbsence.empty) {
+      throw new HttpsError("already-exists", "이미 결석 처리된 슬롯입니다.");
+    }
+
+    // 4. 결석 이벤트 생성
+    const timestamp = admin.firestore.Timestamp.now();
+    const absenceData: Omit<ClassAbsenceEvent, "id"> = {
+      userId,
+      studentId: record.studentId,
+      studentName: record.studentName,
+      date: record.date,
+
+      attendanceRecordId,
+      blockNumber: record.blockNumber || 1,
+
+      slotId,
+      subject: targetSlot.subject,
+      slotStartTime: targetSlot.startTime,
+      slotEndTime: targetSlot.endTime,
+
+      markedBy: userId,
+      markedByName: request.auth.token.name || "관리자",
+      markedAt: timestamp,
+      notes: notes || "",
+
+      createdAt: timestamp,
+      updatedAt: timestamp
+    };
+
+    const absenceRef = await db
+      .collection("users")
+      .doc(userId)
+      .collection("class_absence_events")
+      .add(absenceData);
+
+    return {
+      success: true,
+      message: `${targetSlot.subject} 수업 결석 처리 완료`,
+      data: {
+        id: absenceRef.id,
+        ...absenceData
+      }
+    };
+  } catch (error) {
+    console.error("결석 처리 오류:", error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    throw new HttpsError("internal", "서버 오류가 발생했습니다.");
+  }
+});
+
+/**
+ * 결석 처리 취소
+ */
+export const cancelClassAbsence = onCall({ cors: corsConfig }, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "인증이 필요합니다.");
+  }
+
+  const userId = request.auth.uid;
+  const { absenceEventId } = request.data;
+
+  if (!absenceEventId) {
+    throw new HttpsError("invalid-argument", "absenceEventId가 필요합니다.");
+  }
+
+  try {
+    const db = admin.firestore();
+
+    await db
+      .collection("users")
+      .doc(userId)
+      .collection("class_absence_events")
+      .doc(absenceEventId)
+      .delete();
+
+    return {
+      success: true,
+      message: "결석 처리가 취소되었습니다."
+    };
+  } catch (error) {
+    console.error("결석 취소 오류:", error);
+    throw new HttpsError("internal", "서버 오류가 발생했습니다.");
+  }
+});
+
+/**
+ * 결석 이벤트 조회
+ */
+export const getClassAbsenceEvents = onCall({ cors: corsConfig }, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "인증이 필요합니다.");
+  }
+
+  const userId = request.auth.uid;
+  const { attendanceRecordId, studentId, startDate, endDate } = request.data;
+
+  try {
+    const db = admin.firestore();
+    let query = db
+      .collection("users")
+      .doc(userId)
+      .collection("class_absence_events") as admin.firestore.Query;
+
+    if (attendanceRecordId) {
+      query = query.where("attendanceRecordId", "==", attendanceRecordId);
+    }
+    if (studentId) {
+      query = query.where("studentId", "==", studentId);
+    }
+    if (startDate) {
+      query = query.where("date", ">=", startDate);
+    }
+    if (endDate) {
+      query = query.where("date", "<=", endDate);
+    }
+
+    const snapshot = await query.get();
+
+    const events = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    return {
+      success: true,
+      data: events
+    };
+  } catch (error) {
+    console.error("결석 이벤트 조회 오류:", error);
     throw new HttpsError("internal", "서버 오류가 발생했습니다.");
   }
 });
